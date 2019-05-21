@@ -16,17 +16,11 @@ using OxyPlot.Axes;
 using OxyPlot.Series;
 
 
-namespace App1
+namespace OscilloscopeAndroid
 {
     [Activity(Label = "@string/app_name", Theme = "@style/AppTheme", MainLauncher = true)]
-    public class MainActivity : AppCompatActivity
+    public class MainView : AppCompatActivity
     {
-        TextView Number1;
-        TextView Number2;
-        TextView Number3;
-        TextView Number4;
-        TextView Range1;
-        TextView Range2;
         PlotView view;
         B382Meter Device;
 
@@ -332,30 +326,7 @@ namespace App1
                     avr[3] += data[3][j];
             }
             int i = 0;
-            if (activeChannel[0])
-            {
-                avr[i] /= n;
-                Number1.Text = avr[i].ToString();
-                i++;
-            }
-            if (activeChannel[1])
-            {
-                avr[i] /= n;
-                Number2.Text = avr[i].ToString();
-                i++;
-            }
-            if (activeChannel[2])
-            {
-                avr[i] /= n;
-                Number3.Text = avr[i].ToString();
-                i++;
-            }
-            if (activeChannel[3])
-            {
-                avr[i] /= n;
-                Number4.Text = avr[i].ToString();
-                i++;
-            }
+
 
         }
 

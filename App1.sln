@@ -1,9 +1,9 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.27703.1
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.28803.452
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "App1", "App1\App1.csproj", "{B5470D2D-29CA-4B75-A02A-94E5F20DFF7A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Oscilloscope", "App1\Oscilloscope.csproj", "{B5470D2D-29CA-4B75-A02A-94E5F20DFF7A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -9,7 +9,7 @@ using Android.Runtime;
 using Android.Views;
 using Android.Widget;
 
-namespace App1
+namespace OscilloscopeAndroid
 {
     [Activity(Label = "Activity1")]
     public class Settings : Activity
@@ -20,10 +20,6 @@ namespace App1
         public bool[] activeChannel;
         public bool[] ChannelRange;
         public double SamplingPeriod;
-        CheckBox ReangeCh2A;
-        CheckBox ReangeCh2mA;
-        CheckBox ReangeCh3A;
-        CheckBox ReangeCh3mA;
         protected override void OnCreate(Bundle savedInstanceState)
         {
             base.OnCreate(savedInstanceState);
@@ -35,7 +31,7 @@ namespace App1
             SamplingPeriod = Intent.GetDoubleExtra("SamplingPeriod",1e-3);
 
             IpText = FindViewById<TextView>(Resource.Id.textInputEditText1);
-            save = FindViewById<Button>(App1.Resource.Id.ButtonSave);
+            save = FindViewById<Button>(OscilloscopeAndroid.Resource.Id.ButtonSave);
             save.Click += Save_Click;
             IpText.Text = IP;
 
@@ -44,27 +40,6 @@ namespace App1
 
             ChannelEn1.Checked = activeChannel[0];
             ChannelEn2.Checked = activeChannel[1];
-
-            if (!ChannelRange[0])
-            {
-                ReangeCh2A.Checked = true;
-                ReangeCh2mA.Checked = false;
-            }
-            else
-            {
-                ReangeCh2mA.Checked = true;
-                ReangeCh2A.Checked = false;
-            }
-            if (!ChannelRange[1])
-            {
-                ReangeCh3A.Checked = true;
-                ReangeCh3mA.Checked = false;
-            }
-            else
-            {
-                ReangeCh3mA.Checked = true;
-                ReangeCh3A.Checked = false;
-            }
         }
 
 
@@ -91,7 +66,7 @@ namespace App1
 
         private void Save_Click(object sender, EventArgs e)
         {
-            var intent = new Intent(this, typeof(MainActivity));
+            var intent = new Intent(this, typeof(MainView));
             try
             {
                 IP = IpText.Text;
