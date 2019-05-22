@@ -21,13 +21,10 @@ namespace OscilloscopeAndroid
     [Activity(Label = "@string/app_name", Theme = "@style/AppTheme", MainLauncher = true)]
     public class MainView : AppCompatActivity
     {
-        PlotView view;
-        B382Meter Device;
+        private PlotView view;
+        private Oscilloscope oscilloscope = new Oscilloscope();
+        private TCPIPTransport transport = new TCPIPTransport();
 
-        private readonly int DataSize = 30;
-
-        TCPIPTransport _Transport = new TCPIPTransport();
-        public const int ChannelCount = B382Meter.ChannelCount;
 
         #region <Настройки>
         public string IP;
@@ -50,7 +47,7 @@ namespace OscilloscopeAndroid
             try
             {
                 //if settings changes
-                TakeSettings();
+                SetSettings();
             }
             catch
             {
@@ -60,17 +57,17 @@ namespace OscilloscopeAndroid
 
             SetContentView(Resource.Layout.activity_main);
 
-            Switch enable = FindViewById<Switch>(Resource.Id.switch1);
+            Switch enableSwitch = FindViewById<Switch>(Resource.Id.switch1);
 
             view = FindViewById<PlotView>(Resource.Id.plot_view);
 
 
             // INIT
-            _Transport.IPAddress = IPAddress.Parse(IP);
-            _Transport.Port = 0x6871;
-            _Transport.Timeout = 500;
+            transport.IPAddress = IPAddress.Parse(IP);
+            transport.Port = 0x6871;
+            transport.Timeout = 500;
 
-            enable.CheckedChange += EnabelApplication;
+            enableSwitch.CheckedChange += EnabelApplicationAsync;
 
             Button buttonAxisX_inc = FindViewById<Button>(Resource.Id.button_x_dec);
             Button buttonAxisX_dec = FindViewById<Button>(Resource.Id.button_x_inc);
@@ -78,31 +75,22 @@ namespace OscilloscopeAndroid
             buttonAxisX_inc.Click += AxisX_increment;
             buttonAxisX_dec.Click += AxisX_decrease;
             buttonSettings.Click += ButtinSettings_Click;
+            Context context = ApplicationContext;
         }
 
 
-
-        private void ButtinSettings_Click(object sender, System.EventArgs e)
-        {
-            var intent = new Intent(this, typeof(Settings));
-            intent.PutExtra("IP", IP);
-            intent.PutExtra("ActiveChannel", activeChannel);
-            intent.PutExtra("ChannelRange", ChannelRange);
-            intent.PutExtra("SamplingPeriod", SamplingPeriod);
-            StartActivity(intent);
-        }
 
         bool enabled = false;
-        private void EnabelApplication(object sender, CompoundButton.CheckedChangeEventArgs e)
+        private async void EnabelApplicationAsync(object sender, CompoundButton.CheckedChangeEventArgs e)
         {
             if (enabled == false)
             {
                 enabled = true;
-                Main();
+                await Main();
             }
             else
             {
-                _Transport.Disconnect();
+                //transport.Disconnect();
                 enabled = false;
             }
         }
@@ -112,7 +100,7 @@ namespace OscilloscopeAndroid
 
             try
             {
-                //_Transport.Connect();
+                //transport.Connect();
             }
             catch (Exception exc)
             {
@@ -122,11 +110,12 @@ namespace OscilloscopeAndroid
 
             try
             {
-                float[][] DataBuffer = new float[][] { new float[DataSize], new float[DataSize], new float[DataSize], new float[DataSize] };
-                Device = new B382Meter(_Transport);
-                Device.ClearProtocol();
-                Device.Reset(true);
-                Device.SetMeasMode(false, true);
+                float[][] DataBuffer = new float[][] { new float[oscilloscope.DataSize], new float[oscilloscope.DataSize],
+                    new float[oscilloscope.DataSize], new float[oscilloscope.DataSize] };
+                //Device = new B382Meter(transport);
+                //Device.ClearProtocol();
+                //Device.Reset(true);
+                //Device.SetMeasMode(false, true);
                 //Device.ReadCalibrations();
                 //var res = Device.GetIDs();
 
@@ -134,14 +123,14 @@ namespace OscilloscopeAndroid
                 //Number1.Text = (res.Serial).ToString() + "|" + (res.FPGAVersion).ToString() + "|" + (res.TypeID).ToString();
                 //String outText = (res.Serial).ToString() + "|" + (res.FPGAVersion).ToString() + "|" + (res.TypeID).ToString();
                 //Toast.MakeText(ApplicationContext, outText, ToastLength.Long).Show();
-                ApplySettings(Device);
+                //ApplySettings(Device);
 
 
                 while (true)
                 {
                     //----------- Основные методы
-                    //Start(Device);
-                    //GetDataStatus(Device);
+                    //oscilloscope.Start();
+                    //await oscilloscope.GetDataStatus();
                     //DataBuffer = ReadData(Device);
                     //ShowData(DataBuffer);
                     view.Model = CreatePlotModel();
@@ -159,12 +148,17 @@ namespace OscilloscopeAndroid
             }
         }
 
-        public bool IsConnected
+        private void ButtinSettings_Click(object sender, System.EventArgs e)
         {
-            get { return _Transport.Connected; }
+            var intent = new Intent(this, typeof(SettingsView));
+            intent.PutExtra("IP", IP);
+            intent.PutExtra("ActiveChannel", activeChannel);
+            intent.PutExtra("ChannelRange", ChannelRange);
+            intent.PutExtra("SamplingPeriod", SamplingPeriod);
+            StartActivity(intent);
         }
 
-        public void TakeSettings()
+        public void SetSettings()
         {
             if (!Intent.GetBooleanExtra("Save", false))
                 throw new Exception();
@@ -192,14 +186,14 @@ namespace OscilloscopeAndroid
             SamplingPeriod = 1e-3;
         }
 
-        void ApplySettings(B382Meter _Device)
+        public void ApplySettings(B382Meter _Device)
         {
 
-            // должно куда-то сохранять данные 
+            // TODO: должно куда-то сохранять данные, файл xml
             //Device.SetChStates(true, _EnabledChannels[1].Protected, _EnabledChannels[2].Protected, _EnabledChannels[3].Protected, false);
             _Device.SetChStates(activeChannel[0], activeChannel[1], activeChannel[2], activeChannel[3], false); //Все 4 канала включены true
             //_Device.SetChStates(true, true, true, true, false); //Все 4 канала включены true
-            _Device.SetSegment(0, DataSize, true);
+            _Device.SetSegment(0, oscilloscope.DataSize, true);
             //_FrameDataDesc.DataSize = _DataSizeOscBuffered.Protected;
 
             _Device.SetSamplingPeriod(SamplingPeriod, true);
@@ -214,121 +208,15 @@ namespace OscilloscopeAndroid
 
         public enum EnumAction { Reset = 0x1, Run = 0x2, StopLogger = 0x10 };
 
-        void Start(B382Meter _Device)
-        {
-            if (!IsConnected)
-                throw new Exception();
-            _Device.ClearProtocol();
-            _Device.Start(true);
-        }
-
-        async Task GetDataStatus(B382Meter _Device)
-        {
-            if (!IsConnected)
-                Toast.MakeText(ApplicationContext, "Устройство не готово", ToastLength.Long).Show();
-
-            _Device.ClearProtocol();
-
-            R4RegisterBase r4 = _Device.GetStatus();
-
-            while (!r4.MemIsEnd)
-            {
-                await Task.Delay(200);
-                r4 = _Device.GetStatus();
-            }
-            //Message: data is ready
-            //Toast.MakeText(ApplicationContext, "data is ready", ToastLength.Long).Show();
-        }
-
-        public float[][] ReadData(B382Meter _Device)
-        {
-            //if (!IsConnected)
-            //{
-            //    Toast.MakeText(ApplicationContext, "Устройство не готово к  данных", ToastLength.Long).Show();
-            //    throw new Exception();
-            //}
-            float[][] _DataBuffer = new float[][] { new float[DataSize], new float[DataSize], new float[DataSize], new float[DataSize] };
-            int ActiveChannelCount = 0;
-            for (int i = 0; i < activeChannel.Length; i++)
-            {
-                if (activeChannel[i] == true)
-                    ActiveChannelCount++;
-            }
-
-            _Device.ClearProtocol();
-            R4RegisterBase r4 = _Device.GetStatus();
-            uint Start = (uint)(r4.PreReg - (r4.PreReg % ActiveChannelCount));
-            // Указываем адрес, откуда будем читать
-            _Device.PrepareForReading(Start);
-            int count = DataSize * ActiveChannelCount;
-
-            Array.Resize(ref UInt16Buffer, count);
-            _Device.GetData(UInt16Buffer);
-
-            //Calibration[] calibrs = GetCurrentCallibrations(_Device);
-
-            for (int k = 0, j = 0; j < DataSize; j++)
-            {
-                for (int i = 0; i < ChannelCount; i++)
-                    if (_DataBuffer[i].Length > 0)
-                    {
-                        _DataBuffer[i][j] = ParseRawData(UInt16Buffer[k]);
-                        k++;
-                    }
-            }
-
-            return _DataBuffer;
-        }
-
-        protected virtual float ParseRawData(ushort value)
-        {
-            return (value - 32768) * 30f / (32768f);
-            //return calibr.ToValue(value);
-            //return value / 10000.0f;
-        }
-
-        //protected Calibration[] GetCurrentCallibrations(B382Meter _Device)
-        //{
-        //    Calibration[] callibrs = new Calibration[ChannelCount];
-        //    for (int i = 0; i < ChannelCount; i++)
-        //        callibrs[i] = _Device.GetCalibration(i, AppliedRange(i));
-        //    return callibrs;
-        //}
-
-        //private int AppliedRange(int ch)
-        //{
-        //    if (ch == 2 || ch == 3)
-        //        return ChannelRange[ch] ? 0 : 1;
-        //    //System.Diagnostics.Debug.Fail(string.Format("Channel {0} has not range settings", ch));
-        //    return 0;
-        //}
-
-        public void ShowData(float[][] data)
-        {
-            double[] avr = new double[] { 0, 0, 0, 0 };
-            int n = data[1].Length;
-            int ActiveChannelCount = 0;
-            for (int j = 0; j < activeChannel.Length; j++)
-            {
-                if (activeChannel[j] == true)
-                    ActiveChannelCount++;
-            }
-
-            for (int j = 0; j < n; j++)
-            {
-
-                avr[0] += data[0][j];
-                if (ActiveChannelCount >= 2)
-                    avr[1] += data[1][j];
-                if (ActiveChannelCount >= 3)
-                    avr[2] += data[2][j];
-                if (ActiveChannelCount >= 4)
-                    avr[3] += data[3][j];
-            }
-            int i = 0;
 
 
-        }
+
+
+
+
+
+
+
 
         private PlotModel CreatePlotModel()
         {
@@ -340,7 +228,7 @@ namespace OscilloscopeAndroid
             plotModel.Axes.Add(new LinearAxis
             {
                 Position = AxisPosition.Bottom,
-                Maximum = (DataSize - 1) * x_scale,
+                Maximum = (oscilloscope.DataSize - 1) * x_scale,
                 Minimum = 0,
                 TickStyle = TickStyle.Crossing,
                 MajorGridlineStyle = LineStyle.Dash,
@@ -390,7 +278,7 @@ namespace OscilloscopeAndroid
             };
 
             //Эмяляция данных на графике
-            GenerateData(series1);
+            GenerateData1(series1);
             GenerateData2(series2);
 
             //AddData(series1, data, 0);
@@ -412,7 +300,7 @@ namespace OscilloscopeAndroid
             }
         }
 
-        private void GenerateData(LineSeries series)
+        private void GenerateData1(LineSeries series)
         {
 
             DataPoint point;

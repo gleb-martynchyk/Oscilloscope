@@ -12,7 +12,7 @@ using Android.Widget;
 namespace OscilloscopeAndroid
 {
     [Activity(Label = "Activity1")]
-    public class Settings : Activity
+    public class SettingsView : Activity
     {
         Button save;
         TextView IpText;
@@ -32,14 +32,39 @@ namespace OscilloscopeAndroid
 
             IpText = FindViewById<TextView>(Resource.Id.textInputEditText1);
             save = FindViewById<Button>(OscilloscopeAndroid.Resource.Id.ButtonSave);
-            save.Click += Save_Click;
-            IpText.Text = IP;
-
             CheckBox ChannelEn1 = FindViewById<CheckBox>(Resource.Id.checkBox1);
             CheckBox ChannelEn2 = FindViewById<CheckBox>(Resource.Id.checkBox2);
+            save.Click += Save_Click;
 
+            IpText.Text = IP;
             ChannelEn1.Checked = activeChannel[0];
             ChannelEn2.Checked = activeChannel[1];
+        }
+
+        private void Save_Click(object sender, EventArgs e)
+        {
+            var intent = new Intent(this, typeof(MainView));
+            try
+            {
+                IP = IpText.Text;
+                intent.PutExtra("Save", true);
+                if (IP == "" || IP == null)
+                {
+                    Toast.MakeText(ApplicationContext, "Неверный IP", ToastLength.Long).Show();
+                    throw new Exception();
+                }
+                intent.PutExtra("IP", IP);
+                intent.PutExtra("ActiveChannel", activeChannel);
+                if (activeChannel[0] == false && activeChannel[1] == false && activeChannel[2] == false && activeChannel[3] == false)
+                {
+                    Toast.MakeText(ApplicationContext, "Включите хотя-бы 1 канал", ToastLength.Long).Show();
+                    throw new Exception();
+                }
+                intent.PutExtra("ChannelRange", ChannelRange);
+                intent.PutExtra("SamplingPeriod", SamplingPeriod);
+                StartActivity(intent);
+            }
+            catch { }
         }
 
 
@@ -64,30 +89,6 @@ namespace OscilloscopeAndroid
             activeChannel[0] = !activeChannel[0];
         }
 
-        private void Save_Click(object sender, EventArgs e)
-        {
-            var intent = new Intent(this, typeof(MainView));
-            try
-            {
-                IP = IpText.Text;
-                intent.PutExtra("Save", true);
-                if (IP == "" || IP == null)
-                {
-                    Toast.MakeText(ApplicationContext, "Неверный IP", ToastLength.Long).Show();
-                    throw new Exception();
-                }
-                intent.PutExtra("IP", IP);
-                intent.PutExtra("ActiveChannel", activeChannel);
-                if (activeChannel[0] == false&& activeChannel[1] == false&& activeChannel[2] == false&& activeChannel[3] == false)
-                {
-                    Toast.MakeText(ApplicationContext, "Включите хотя-бы 1 канал", ToastLength.Long).Show();
-                    throw new Exception();
-                }
-                intent.PutExtra("ChannelRange", ChannelRange);
-                intent.PutExtra("SamplingPeriod", SamplingPeriod);
-                StartActivity(intent);
-            }
-            catch { }
-        }
+
     }
 }
