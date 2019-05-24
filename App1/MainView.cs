@@ -10,11 +10,10 @@ using Android.Content;
 using MeterFramework.AlmaMeter;
 using BECSLibrary.Transport;
 
-using OxyPlot.Xamarin.Android;
 using OxyPlot;
 using OxyPlot.Axes;
 using OxyPlot.Series;
-
+using OxyPlot.Xamarin.Android;
 
 namespace OscilloscopeAndroid
 {
@@ -24,15 +23,9 @@ namespace OscilloscopeAndroid
         private PlotView view;
         private Oscilloscope oscilloscope = new Oscilloscope();
         private TCPIPTransport transport = new TCPIPTransport();
+        private Settings settings = new Settings();
+        bool enabled = false;
 
-
-        #region <Настройки>
-        public string IP;
-        public bool[] activeChannel;
-        public bool[] ChannelRange;
-        public double SamplingPeriod;
-        public ushort[] UInt16Buffer = new ushort[0];
-        #endregion <Настройки>
 
         #region<Axis scale parametrs>
         float x_scale = 1;
@@ -46,12 +39,11 @@ namespace OscilloscopeAndroid
             // Set our view from the "main" layout resource
             try
             {
-                //if settings changes
-                SetSettings();
+                settings.SetSettings(Intent,ApplicationContext);
             }
             catch
             {
-                ResetSettings();
+                settings.ResetSettings();
             }
 
 
@@ -61,9 +53,8 @@ namespace OscilloscopeAndroid
 
             view = FindViewById<PlotView>(Resource.Id.plot_view);
 
-
             // INIT
-            transport.IPAddress = IPAddress.Parse(IP);
+            transport.IPAddress = IPAddress.Parse(settings.Ip);
             transport.Port = 0x6871;
             transport.Timeout = 500;
 
@@ -79,8 +70,6 @@ namespace OscilloscopeAndroid
         }
 
 
-
-        bool enabled = false;
         private async void EnabelApplicationAsync(object sender, CompoundButton.CheckedChangeEventArgs e)
         {
             if (enabled == false)
@@ -123,7 +112,7 @@ namespace OscilloscopeAndroid
                 //Number1.Text = (res.Serial).ToString() + "|" + (res.FPGAVersion).ToString() + "|" + (res.TypeID).ToString();
                 //String outText = (res.Serial).ToString() + "|" + (res.FPGAVersion).ToString() + "|" + (res.TypeID).ToString();
                 //Toast.MakeText(ApplicationContext, outText, ToastLength.Long).Show();
-                //ApplySettings(Device);
+                //ApplySettings(Device,oscilloscope);
 
 
                 while (true)
@@ -150,72 +139,8 @@ namespace OscilloscopeAndroid
 
         private void ButtinSettings_Click(object sender, System.EventArgs e)
         {
-            var intent = new Intent(this, typeof(SettingsView));
-            intent.PutExtra("IP", IP);
-            intent.PutExtra("ActiveChannel", activeChannel);
-            intent.PutExtra("ChannelRange", ChannelRange);
-            intent.PutExtra("SamplingPeriod", SamplingPeriod);
-            StartActivity(intent);
+            StartActivity(settings.getSettingsIntent(this));
         }
-
-        public void SetSettings()
-        {
-            if (!Intent.GetBooleanExtra("Save", false))
-                throw new Exception();
-            IP = Intent.GetStringExtra("IP");
-            if (IP == null)
-            {
-                Toast.MakeText(ApplicationContext, "Неверный IP", ToastLength.Long).Show();
-                throw new Exception();
-            }
-            activeChannel = Intent.GetBooleanArrayExtra("ActiveChannel");
-            if (activeChannel == new bool[] { false, false, false, false })
-            {
-                Toast.MakeText(ApplicationContext, "Включите хотя-бы 1 канал", ToastLength.Long).Show();
-                throw new Exception();
-            }
-            ChannelRange = Intent.GetBooleanArrayExtra("ChannelRange");
-            SamplingPeriod = Intent.GetDoubleExtra("SamplingPeriod", 1e-3);
-        }
-
-        public void ResetSettings()
-        {
-            IP = "10.128.11.141";
-            activeChannel = new bool[] { true, true, true, true };
-            ChannelRange = new bool[] { false, false };
-            SamplingPeriod = 1e-3;
-        }
-
-        public void ApplySettings(B382Meter _Device)
-        {
-
-            // TODO: должно куда-то сохранять данные, файл xml
-            //Device.SetChStates(true, _EnabledChannels[1].Protected, _EnabledChannels[2].Protected, _EnabledChannels[3].Protected, false);
-            _Device.SetChStates(activeChannel[0], activeChannel[1], activeChannel[2], activeChannel[3], false); //Все 4 канала включены true
-            //_Device.SetChStates(true, true, true, true, false); //Все 4 канала включены true
-            _Device.SetSegment(0, oscilloscope.DataSize, true);
-            //_FrameDataDesc.DataSize = _DataSizeOscBuffered.Protected;
-
-            _Device.SetSamplingPeriod(SamplingPeriod, true);
-            //_FrameDataDesc.SamplingTime = _SamplingTimeOscBuffered.Protected;
-
-            _Device.SetChRange(
-            ChannelRange[0] ? EnumB382ChRange.I_2mA : EnumB382ChRange.I_2A,
-            ChannelRange[1] ? EnumB382ChRange.I_2mA : EnumB382ChRange.I_2A,
-            true);
-            //_Device.FlushProtocol();
-        }
-
-        public enum EnumAction { Reset = 0x1, Run = 0x2, StopLogger = 0x10 };
-
-
-
-
-
-
-
-
-
 
 
         private PlotModel CreatePlotModel()

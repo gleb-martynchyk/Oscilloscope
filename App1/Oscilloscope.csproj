@@ -64,7 +64,8 @@
     <Reference Include="Mono.Android" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Classes\SettingsView.cs" />
+    <Compile Include="Classes\Settings.cs" />
+    <Compile Include="Classes\Views\SettingsView.cs" />
     <Compile Include="B382\AMDevice.cs" />
     <Compile Include="B382\AMHelper.cs" />
     <Compile Include="B382\AMRegisters.cs" />
@@ -75,7 +76,7 @@
     <Compile Include="B382\RegistersProtocolW32R16.cs" />
     <Compile Include="B382\TCPIPTransport.cs" />
     <Compile Include="MainView.cs" />
-    <Compile Include="Oscilloscope.cs" />
+    <Compile Include="Classes\Oscilloscope.cs" />
     <Compile Include="Resources\Resource.Designer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
