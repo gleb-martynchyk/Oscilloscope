@@ -46,13 +46,11 @@ namespace OscilloscopeAndroid
                 settings.ResetSettings();
             }
 
-
             SetContentView(Resource.Layout.activity_main);
 
             Switch enableSwitch = FindViewById<Switch>(Resource.Id.switch1);
 
             view = FindViewById<PlotView>(Resource.Id.plot_view);
-
             // INIT
             transport.IPAddress = IPAddress.Parse(settings.Ip);
             transport.Port = 0x6871;
