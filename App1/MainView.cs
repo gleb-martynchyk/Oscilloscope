@@ -39,7 +39,7 @@ namespace OscilloscopeAndroid
             // Set our view from the "main" layout resource
             try
             {
-                settings.SetSettings(Intent,ApplicationContext);
+                settings.SetSettings(Intent, ApplicationContext);
             }
             catch
             {
@@ -60,9 +60,16 @@ namespace OscilloscopeAndroid
 
             Button buttonAxisX_inc = FindViewById<Button>(Resource.Id.button_x_dec);
             Button buttonAxisX_dec = FindViewById<Button>(Resource.Id.button_x_inc);
-            Button buttonSettings = FindViewById<Button>(Resource.Id.button2);
             buttonAxisX_inc.Click += AxisX_increment;
             buttonAxisX_dec.Click += AxisX_decrease;
+
+            Button buttonAxisY_inc = FindViewById<Button>(Resource.Id.button_y_dec);
+            Button buttonAxisY_dec = FindViewById<Button>(Resource.Id.button_y_inc);
+            buttonAxisY_inc.Click += AxisY_increment;
+            buttonAxisY_dec.Click += AxisY_decrease;
+
+            Button buttonSettings = FindViewById<Button>(Resource.Id.button2);
+
             buttonSettings.Click += ButtinSettings_Click;
             Context context = ApplicationContext;
         }
@@ -165,8 +172,8 @@ namespace OscilloscopeAndroid
             {
                 //IsZoomEnabled = false,    //можно ли зумить оси, должно стоять у двух
                 Position = AxisPosition.Left,
-                Maximum = 6,
-                Minimum = -6,
+                Maximum = 6 * y_scale,
+                Minimum = -6 * y_scale,
                 MajorGridlineStyle = LineStyle.Solid,
                 MajorGridlineColor = OxyColor.Parse("#4A4A4A"),
                 MinorGridlineStyle = LineStyle.Solid,
@@ -250,12 +257,28 @@ namespace OscilloscopeAndroid
 
         private void AxisX_increment(object sender, EventArgs e)
         {
-            x_scale += (float)0.1;
+            x_scale += 0.1f;
         }
 
         private void AxisX_decrease(object sender, EventArgs e)
         {
-            x_scale -= (float)0.1;
+            x_scale -= 0.1f;
+        }
+
+        private void AxisY_increment(object sender, EventArgs e)
+        {
+            if (y_scale <= 0.2f)
+            {
+                y_scale += 0.1f;
+            }
+        }
+
+        private void AxisY_decrease(object sender, EventArgs e)
+        {
+            if (y_scale <= 0.2f)
+            {
+                y_scale -= 0.1f;
+            }
         }
     }
 }
