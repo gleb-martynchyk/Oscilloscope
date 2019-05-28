@@ -16,17 +16,29 @@ namespace OscilloscopeAndroid
 {
     class Oscilloscope
     {
-        public const int ChannelCount = B382Meter.ChannelCount;
-        private B382Meter device;
+        public const int ChannelCount = B320Oscilloscope.ChannelCount;
+        private B320Oscilloscope device;
         private TCPIPTransport transport = new TCPIPTransport();
         private int dataSize = 30;
+        private Settings settings;
+        private ushort[] UInt16Buffer;
+
+        public Oscilloscope(TCPIPTransport transport)
+        {
+            this.settings = new Settings();
+            this.device = new B320Oscilloscope(transport);
+            this.transport = transport;
+            this.UInt16Buffer = new ushort[0];
+        }
 
         public int DataSize
         {
-            get
-            {
-                return this.dataSize;
-            }
+            get { return this.dataSize; }
+        }
+
+        public B320Oscilloscope Device
+        {
+            get { return this.device; }
         }
 
         public bool IsConnected
@@ -34,13 +46,10 @@ namespace OscilloscopeAndroid
             get { return transport.Connected; }
         }
 
-        #region <Настройки>
-        public string IP;
-        public bool[] activeChannel;
-        public bool[] ChannelRange;
-        public double SamplingPeriod;
-        public ushort[] UInt16Buffer = new ushort[0];
-        #endregion <Настройки>
+        public Settings Settings
+        {
+            get { return settings; }
+        }
 
         public void Start()
         {
@@ -73,9 +82,9 @@ namespace OscilloscopeAndroid
             double[] avr = new double[] { 0, 0, 0, 0 };
             int n = data[1].Length;
             int ActiveChannelCount = 0;
-            for (int j = 0; j < activeChannel.Length; j++)
+            for (int j = 0; j < settings.ActiveChannels.Length; j++)
             {
-                if (activeChannel[j] == true)
+                if (settings.ActiveChannels[j] == true)
                     ActiveChannelCount++;
             }
 
@@ -100,13 +109,15 @@ namespace OscilloscopeAndroid
             //    Toast.MakeText(ApplicationContext, "Устройство не готово к  данных", ToastLength.Long).Show();
             //    throw new Exception();
             //}
-            float[][] _DataBuffer = new float[][] { new float[dataSize], new float[dataSize], new float[dataSize], new float[dataSize] };
+            float[][] _DataBuffer = new float[][] { new float[dataSize], new float[dataSize] };
             int ActiveChannelCount = 0;
-            for (int i = 0; i < activeChannel.Length; i++)
+            for (int i = 0; i < settings.ActiveChannels.Length; i++)
             {
-                if (activeChannel[i] == true)
+                if (settings.ActiveChannels[i])
                     ActiveChannelCount++;
             }
+
+            ActiveChannelCount = 2;
 
             device.ClearProtocol();
             R4RegisterBase r4 = device.GetStatus();
@@ -131,6 +142,21 @@ namespace OscilloscopeAndroid
             }
 
             return _DataBuffer;
+        }
+
+        public void ApplySettings(Settings settings)
+        {
+
+            // TODO: должно куда-то сохранять данные, файл xml
+            //device.SetChStates(activeChannels[0], activeChannels[1], activeChannels[2], activeChannels[3], false); //Все 4 канала включены true
+            device.SetChStates(true, true, false); //Все 4 канала включены true
+            device.SetSegment(0, this.DataSize, true);
+
+            device.SetSamplingPeriod(settings.SamplingPeriod, true);
+
+            device.SetGains(true, true, true, false, false,
+                             true, true, true, false, false, true);
+            device.FlushProtocol();
         }
 
         protected virtual float ParseRawData(ushort value)

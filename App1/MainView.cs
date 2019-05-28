@@ -21,9 +21,10 @@ namespace OscilloscopeAndroid
     public class MainView : AppCompatActivity
     {
         private PlotView view;
-        private Oscilloscope oscilloscope = new Oscilloscope();
         private TCPIPTransport transport = new TCPIPTransport();
-        private Settings settings = new Settings();
+        private Oscilloscope oscilloscope;
+        private Settings settings;
+        private B320Oscilloscope device;
         bool enabled = false;
 
 
@@ -35,8 +36,11 @@ namespace OscilloscopeAndroid
         protected override void OnCreate(Bundle savedInstanceState)
         {
             base.OnCreate(savedInstanceState);
+            
+            oscilloscope = new Oscilloscope(transport);
+            settings = oscilloscope.Settings;
+            device = oscilloscope.Device;
 
-            // Set our view from the "main" layout resource
             try
             {
                 settings.SetSettings(Intent, ApplicationContext);
@@ -51,6 +55,7 @@ namespace OscilloscopeAndroid
             Switch enableSwitch = FindViewById<Switch>(Resource.Id.switch1);
 
             view = FindViewById<PlotView>(Resource.Id.plot_view);
+
             // INIT
             transport.IPAddress = IPAddress.Parse(settings.Ip);
             transport.Port = 0x6871;
@@ -84,17 +89,16 @@ namespace OscilloscopeAndroid
             }
             else
             {
-                //transport.Disconnect();
+                transport.Disconnect();
                 enabled = false;
             }
         }
 
         public async Task Main()
         {
-
             try
             {
-                //transport.Connect();
+                transport.Connect();
             }
             catch (Exception exc)
             {
@@ -106,39 +110,39 @@ namespace OscilloscopeAndroid
             {
                 float[][] DataBuffer = new float[][] { new float[oscilloscope.DataSize], new float[oscilloscope.DataSize],
                     new float[oscilloscope.DataSize], new float[oscilloscope.DataSize] };
-                //Device = new B382Meter(transport);
-                //Device.ClearProtocol();
-                //Device.Reset(true);
-                //Device.SetMeasMode(false, true);
-                //Device.ReadCalibrations();
-                //var res = Device.GetIDs();
+                device = new B320Oscilloscope(transport);
+                device.ClearProtocol();
+                device.InitDDR(true);
+                device.Reset(true);
+                device.SetMeasMode(false, true);
+                //device.ReadCalibrations();
+                var res = device.GetIDs();
 
                 //Вывод
-                //Number1.Text = (res.Serial).ToString() + "|" + (res.FPGAVersion).ToString() + "|" + (res.TypeID).ToString();
-                //String outText = (res.Serial).ToString() + "|" + (res.FPGAVersion).ToString() + "|" + (res.TypeID).ToString();
-                //Toast.MakeText(ApplicationContext, outText, ToastLength.Long).Show();
-                //ApplySettings(Device,oscilloscope);
+                String outText = (res.Serial).ToString() + "  " + (res.FPGAVersion).ToString() + "  " + (res.TypeID).ToString();
+                Toast.MakeText(ApplicationContext, outText, ToastLength.Long).Show();
+                oscilloscope.ApplySettings(settings);
 
 
                 while (true)
                 {
                     //----------- Основные методы
-                    //oscilloscope.Start();
-                    //await oscilloscope.GetDataStatus();
-                    //DataBuffer = ReadData(Device);
+                    oscilloscope.Start();
+                    await oscilloscope.GetDataStatus();
+                    DataBuffer = oscilloscope.ReadData();
                     //ShowData(DataBuffer);
                     view.Model = CreatePlotModel();
-                    UpdatePlot(view.Model, DataBuffer);
+                    //UpdatePlot(view.Model, DataBuffer);
 
-                    await Task.Delay(33);
-
-                    if (enabled == false)
+                    await Task.Delay(10000);
+                    if (!enabled)
                         break;
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                Toast.MakeText(ApplicationContext, "Критическая ошибка", ToastLength.Long).Show();
+                Toast.MakeText(ApplicationContext, "Критическая ошибка:"+ ex.Message, ToastLength.Long).Show();
+                enabled = false;
             }
         }
 
@@ -267,7 +271,7 @@ namespace OscilloscopeAndroid
 
         private void AxisY_increment(object sender, EventArgs e)
         {
-            if (y_scale <= 0.2f)
+            if (y_scale >= 0.2f)
             {
                 y_scale += 0.1f;
             }
@@ -275,7 +279,7 @@ namespace OscilloscopeAndroid
 
         private void AxisY_decrease(object sender, EventArgs e)
         {
-            if (y_scale <= 0.2f)
+            if (y_scale >= 0.2f)
             {
                 y_scale -= 0.1f;
             }

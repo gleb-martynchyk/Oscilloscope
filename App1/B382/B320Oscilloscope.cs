@@ -1,4 +1,5 @@
-﻿using System;
+﻿using System.Runtime.InteropServices;
+using System;
 using System.Diagnostics;
 using System.IO;
 using BECSLibrary;
@@ -7,23 +8,21 @@ using MeterFramework.Core.ControlProtocols;
 
 namespace MeterFramework.AlmaMeter
 {
-    public enum EnumB382ChRange { I_2mA = 1, I_2A = 2 };
-    [Serializable]
-    public class B382Meter : AMDevice
+    public class B320Oscilloscope : AMDevice
     {
-        public B382Meter(ITransport transport)
+        public B320Oscilloscope(ITransport transport)
             : base(transport)
         {
-            DeviceType = EnumAMDeviceType.B385_Multimeter;
+            DeviceType = EnumAMDeviceType.B320_Oscilloscope;
             DeviceID = AMHelper.PID(DeviceType);
 
             _EEPROMSize = 2048;
             _EEPROMBlockSize = 256;
 
-           //_ADCCalibrations = new CalibrationCollection(ChannelCount, GainCount);
+            //_ADCCalibrations = new CalibrationCollection(ChannelCount, GainCount);
         }
 
-        public const int ChannelCount = 4;
+        public const int ChannelCount = 2;
 
         #region == Калибровки АЦП =============================================
 
@@ -36,7 +35,7 @@ namespace MeterFramework.AlmaMeter
         //    byte[] eeprom = ReadFromEEPROM(address, 0xFF);
 
         //    CalibrationCollection.EnumParseResult res = _ADCCalibrations.ParseV1(eeprom);
-        //     if (res != CalibrationCollection.EnumParseResult.OK)
+        //    if (res != CalibrationCollection.EnumParseResult.OK)
         //        throw new IOException("Ошибка чтения EEPROM: код " + res.ToString());
         //}
 
@@ -45,16 +44,17 @@ namespace MeterFramework.AlmaMeter
         //    return _ADCCalibrations.Get(channel, gain);
         //}
 
-#endregion == Калибровки АЦП ==========================================
+        #endregion == Калибровки АЦП ==========================================
 
-        #region == УПРАВЛЕНИЕ =================================================
 
         #region < Регистр W0: Управление >
 
-        public enum EnumAction { Reset = 0x1, Run = 0x2, StopLogger = 0x10 };
+        public enum EnumAction { Reset = 0x1, Run = 0x2, DDRReset = 0x4, DDRInit = 0x8, StopLogger = 0x10 };
 
         static private W0Register _W0Reset = new W0Register(EnumAction.Reset);
         static private W0Register _W0Run = new W0Register(EnumAction.Run);
+        static private W0Register _W0DDRReset = new W0Register(EnumAction.DDRReset);
+        static private W0Register _W0DDRInit = new W0Register(EnumAction.DDRInit);
         static private W0Register _W0StopLogger = new W0Register(EnumAction.StopLogger);
 
         /// <summary>
@@ -66,6 +66,11 @@ namespace MeterFramework.AlmaMeter
             DoAction(_W0Reset, flush);
         }
 
+        public void InitDDR(bool flush)
+        {
+            DoAction(_W0DDRReset, false);
+            DoAction(_W0DDRInit, flush);
+        }
         /// <summary>
         /// Запустить
         /// </summary>
@@ -94,7 +99,10 @@ namespace MeterFramework.AlmaMeter
         /// [18] – Enable Ch4
         /// [17] – Disable Ch3
         /// [16] – Enable Ch3
-        /// 
+        /// [15] – MemTestOn
+        /// [14] – MemTestOff
+        /// [11] – SetClkSourceBP
+        /// [10] – SetClkSourceSelf
         /// [7] – Disable Logger Mode
         /// [6] – Enable Logger Mode
         /// [3] – Disable Ch2
@@ -110,8 +118,8 @@ namespace MeterFramework.AlmaMeter
                 Data[0] = 0;
             }
 
-            static int[] ChEnablingBits = new int[] { 0, 2, 16, 18 };
-            static int[] ChDisablingBits = new int[] { 1, 3, 17, 19 };
+            static int[] ChEnablingBits = new int[] { 0, 2 };
+            static int[] ChDisablingBits = new int[] { 1, 3 };
 
             public void SetChState(int ch, bool enable)
             {
@@ -133,6 +141,22 @@ namespace MeterFramework.AlmaMeter
                     MathLib.SetBit(ref Data[0], 7, !value);
                 }
             }
+
+            public EnumUsedClock UsedClock
+            {
+                get { return MathLib.CheckBit(Data[0], 10) ? EnumUsedClock.BuildIn : EnumUsedClock.HUBClock; }
+                set
+                {
+                    MathLib.SetBit(ref Data[0], 10, value == EnumUsedClock.BuildIn);
+                    MathLib.SetBit(ref Data[0], 11, value != EnumUsedClock.BuildIn);
+                }
+            }
+
+            public bool MemTestMode
+            {
+                get { return MathLib.CheckBit(Data[0], 14); }
+                set { MathLib.SetBit(ref Data[0], 14, value); MathLib.SetBit(ref Data[0], 15, !value); }
+            }
         }
 
         public void SetChState(int ch, bool enable, bool flush)
@@ -144,15 +168,24 @@ namespace MeterFramework.AlmaMeter
                 FlushProtocol();
         }
 
-        public void SetChStates(bool ch1enable, bool ch2enable, bool ch3enable, bool ch4enable, bool flush)
+        public void SetChStates(bool ch1enable, bool ch2enable, bool flush)
         {
             W1Register w1 = new W1Register();
 
             w1.SetChState(0, ch1enable);
             w1.SetChState(1, ch2enable);
-            w1.SetChState(2, ch3enable);
-            w1.SetChState(3, ch4enable);
 
+            _Protocol.PrepareWriteRequest(w1);
+            if (flush)
+                FlushProtocol();
+        }
+
+        public enum EnumUsedClock { BuildIn, HUBClock };
+
+        public void SetUsedClock(EnumUsedClock usedClock, bool flush)
+        {
+            W1Register w1 = new W1Register();
+            w1.UsedClock = usedClock;
             _Protocol.PrepareWriteRequest(w1);
             if (flush)
                 FlushProtocol();
@@ -162,6 +195,15 @@ namespace MeterFramework.AlmaMeter
         {
             W1Register w1 = new W1Register();
             w1.LoggerMode = loggerMode;
+            _Protocol.PrepareWriteRequest(w1);
+            if (flush)
+                FlushProtocol();
+        }
+
+        public void SetMemTestMode(bool testMode, bool flush)
+        {
+            W1Register w1 = new W1Register();
+            w1.MemTestMode = testMode;
             _Protocol.PrepareWriteRequest(w1);
             if (flush)
                 FlushProtocol();
@@ -347,48 +389,66 @@ namespace MeterFramework.AlmaMeter
         #region < Регистр W8: Диапазон канала >
 
         /// <summary>
-        /// W8 – CurrentRange:
-        // [0] – Set Ch3 range to 1mA 
-        // [1] – Set Ch3 range to 1A
-        // [2] – Set Ch4 range to 1mA 
-        // [3] – Set Ch4 range to 1A
-
+        /// W8 - Switches[3..0]
+        /// [0] – 1/10 канал 1
+        /// [1] – 1/10 канал 2
+        /// [2] – 1/10 канал 3
+        /// [3] – 1/10 канал 4
         /// </summary>
+
+        //[0] – AC/DC канал 1
+        //[1] – 1/10 канал 1
+        //[2] – 1/100 канал 1
+        //[3] – Gain select[0] канал 1
+        //[4] – Gain select[1] канал 1
+
+        //[5] – AC/DC канал 2
+        //[6] – 1/10 канал 2
+        //[7] – 1/100 канал 2
+        //[8] – Gain select[0] канал 2
+        //[9] – Gain select[1] канал 2
+
         public class W8Register : Register<uint>
         {
             public W8Register()
                 : base(8, 1)
             {
-                SetChRange(2, EnumB382ChRange.I_2A);
-                SetChRange(3, EnumB382ChRange.I_2A);
+                Data[0] = 0;
             }
 
-            public EnumB382ChRange GetChRange(int ch)
+            public W8Register(bool ch1, bool ch1_G10, bool ch1_G100, bool ch1_G0, bool ch1_G1,
+                bool ch2, bool ch2_G10, bool ch2_G100, bool ch2_G0, bool ch2_G1)
+                : base(8, 1)
             {
-                ch -= 2;
-                if (ch < 0 || ch > 1)
-                    throw new ArgumentOutOfRangeException("ch");
+                SetGain(0, ch1);
+                SetGain(1, ch1_G10);
+                SetGain(2, ch1_G100);
+                SetGain(3, ch1_G0);
+                SetGain(4, ch1_G1);
 
-                return (EnumB382ChRange)MathLib.GetBits(Data[0], 2 * ch, 2);
+                SetGain(5, ch2);
+                SetGain(6, ch2_G10);
+                SetGain(7, ch2_G100);
+                SetGain(8, ch2_G0);
+                SetGain(9, ch2_G1);
             }
 
-            public void SetChRange(int ch, EnumB382ChRange value)
+            public bool GetGain(int ch)
             {
-                ch -= 2;
-                if (ch < 0 || ch > 1)
-                    throw new ArgumentOutOfRangeException("ch");
+                return MathLib.CheckBit(Data[0], ch);
+            }
 
-                MathLib.SetBits(ref Data[0], 2 * ch, 2, (uint)value);
+            public void SetGain(int ch, bool state)
+            {
+                MathLib.SetBit(ref Data[0], ch, state);
             }
         }
 
-        public void SetChRange(EnumB382ChRange ch3Range, EnumB382ChRange ch4Range, bool flush)
+        public void SetGains(bool ch1, bool ch1_G10, bool ch1_G100, bool ch1_G0, bool ch1_G1,
+                bool ch2, bool ch2_G10, bool ch2_G100, bool ch2_G0, bool ch2_G1, bool flush)
         {
-            W8Register w8 = new W8Register();
-
-            w8.SetChRange(2,ch3Range);
-            w8.SetChRange(3,ch4Range);
-
+            W8Register w8 = new W8Register(ch1, ch1_G10, ch1_G100, ch1_G0, ch1_G1,
+                                            ch2, ch2_G10, ch2_G100, ch2_G0, ch2_G1);
             _Protocol.PrepareWriteRequest(w8);
             if (flush)
                 FlushProtocol();
@@ -513,8 +573,5 @@ namespace MeterFramework.AlmaMeter
         }
 
         #endregion < Регистр R4: Информация о текущем статусе устройства >
-
-
-        #endregion == УПРАВЛЕНИЕ ==============================================
     }
 }

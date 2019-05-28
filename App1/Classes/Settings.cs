@@ -19,14 +19,37 @@ namespace OscilloscopeAndroid
         private bool[] activeChannels;
         private bool[] channelsRange;
         private double samplingPeriod;
-        private ushort[] UInt16Buffer = new ushort[0];
+        private ushort[] uInt16Buffer;
+
+        public Settings()
+        {
+            ResetSettings();
+            this.uInt16Buffer = new ushort[0];
+        }
 
         public string Ip
         {
-            get
-            {
-                return this.ip;
-            }
+            get { return this.ip; }
+        }
+
+        public bool[] ActiveChannels
+        {
+            get { return this.activeChannels; }
+        }
+
+        public bool[] ChannelsRange
+        {
+            get { return this.channelsRange; }
+        }
+
+        public double SamplingPeriod
+        {
+            get { return this.samplingPeriod; }
+        }
+
+        public ushort[] UInt16Buffer
+        {
+            get { return this.uInt16Buffer; }
         }
 
         public void SetSettings(Intent intent, Context context)
@@ -51,29 +74,10 @@ namespace OscilloscopeAndroid
 
         public void ResetSettings()
         {
-            ip = "10.128.11.141";
+            ip = "192.168.0.141";
             activeChannels = new bool[] { true, true, true, true };
             channelsRange = new bool[] { false, false };
             samplingPeriod = 1e-3;
-        }
-
-        public void ApplySettings(B382Meter _Device, Oscilloscope oscilloscope)
-        {
-
-            // TODO: должно куда-то сохранять данные, файл xml
-            _Device.SetChStates(activeChannels[0], activeChannels[1], activeChannels[2], activeChannels[3], false); //Все 4 канала включены true
-            //_Device.SetChStates(true, true, true, true, false); //Все 4 канала включены true
-            _Device.SetSegment(0, oscilloscope.DataSize, true);
-            //_FrameDataDesc.DataSize = _DataSizeOscBuffered.Protected;
-
-            _Device.SetSamplingPeriod(samplingPeriod, true);
-            //_FrameDataDesc.SamplingTime = _SamplingTimeOscBuffered.Protected;
-
-            _Device.SetChRange(
-            channelsRange[0] ? EnumB382ChRange.I_2mA : EnumB382ChRange.I_2A,
-            channelsRange[1] ? EnumB382ChRange.I_2mA : EnumB382ChRange.I_2A,
-            true);
-            //_Device.FlushProtocol();
         }
 
         public Intent getSettingsIntent(Context context)

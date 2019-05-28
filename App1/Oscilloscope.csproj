@@ -64,6 +64,7 @@
     <Reference Include="Mono.Android" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="B382\B320Oscilloscope.cs" />
     <Compile Include="Classes\Settings.cs" />
     <Compile Include="Classes\Views\SettingsView.cs" />
     <Compile Include="B382\AMDevice.cs" />
