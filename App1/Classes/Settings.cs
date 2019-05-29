@@ -19,6 +19,7 @@ namespace OscilloscopeAndroid
         private bool[] activeChannels;
         private bool[] channelsRange;
         private double samplingPeriod;
+        private int dataSize = 30;
         private ushort[] uInt16Buffer;
 
         public Settings()
@@ -29,27 +30,33 @@ namespace OscilloscopeAndroid
 
         public string Ip
         {
-            get { return this.ip; }
+            get { return ip; }
         }
 
         public bool[] ActiveChannels
         {
-            get { return this.activeChannels; }
+            get { return activeChannels; }
         }
 
         public bool[] ChannelsRange
         {
-            get { return this.channelsRange; }
+            get { return channelsRange; }
         }
 
         public double SamplingPeriod
         {
-            get { return this.samplingPeriod; }
+            get { return samplingPeriod; }
+        }
+
+        public int DataSize
+        {
+            get { return dataSize; }
+            set { dataSize = value; }
         }
 
         public ushort[] UInt16Buffer
         {
-            get { return this.uInt16Buffer; }
+            get { return uInt16Buffer; }
         }
 
         public void SetSettings(Intent intent, Context context)

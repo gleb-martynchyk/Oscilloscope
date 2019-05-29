@@ -20,25 +20,21 @@ namespace OscilloscopeAndroid
     [Activity(Label = "@string/app_name", Theme = "@style/AppTheme", MainLauncher = true)]
     public class MainView : AppCompatActivity
     {
-        private PlotView view;
         private TCPIPTransport transport = new TCPIPTransport();
         private Oscilloscope oscilloscope;
         private Settings settings;
         private B320Oscilloscope device;
+        private OsclilloscopePlot osclilloscopePlot;
         bool enabled = false;
 
-
-        #region<Axis scale parametrs>
-        float x_scale = 1;
-        float y_scale = 1;
-        #endregion<Axis scale parametrs>
 
         protected override void OnCreate(Bundle savedInstanceState)
         {
             base.OnCreate(savedInstanceState);
-            
+
             oscilloscope = new Oscilloscope(transport);
-            settings = oscilloscope.Settings;
+            settings = new Settings();
+            oscilloscope.Settings = settings;
             device = oscilloscope.Device;
 
             try
@@ -54,7 +50,7 @@ namespace OscilloscopeAndroid
 
             Switch enableSwitch = FindViewById<Switch>(Resource.Id.switch1);
 
-            view = FindViewById<PlotView>(Resource.Id.plot_view);
+            osclilloscopePlot.View = FindViewById<PlotView>(Resource.Id.plot_view);
 
             // INIT
             transport.IPAddress = IPAddress.Parse(settings.Ip);
@@ -65,13 +61,13 @@ namespace OscilloscopeAndroid
 
             Button buttonAxisX_inc = FindViewById<Button>(Resource.Id.button_x_dec);
             Button buttonAxisX_dec = FindViewById<Button>(Resource.Id.button_x_inc);
-            buttonAxisX_inc.Click += AxisX_increment;
-            buttonAxisX_dec.Click += AxisX_decrease;
+            buttonAxisX_inc.Click += osclilloscopePlot.AxisX_increment;
+            buttonAxisX_dec.Click += osclilloscopePlot.AxisX_decrease;
 
             Button buttonAxisY_inc = FindViewById<Button>(Resource.Id.button_y_dec);
             Button buttonAxisY_dec = FindViewById<Button>(Resource.Id.button_y_inc);
-            buttonAxisY_inc.Click += AxisY_increment;
-            buttonAxisY_dec.Click += AxisY_decrease;
+            buttonAxisY_inc.Click += osclilloscopePlot.AxisY_increment;
+            buttonAxisY_dec.Click += osclilloscopePlot.AxisY_decrease;
 
             Button buttonSettings = FindViewById<Button>(Resource.Id.button2);
 
@@ -85,7 +81,8 @@ namespace OscilloscopeAndroid
             if (enabled == false)
             {
                 enabled = true;
-                await Main();
+                //await oscilloscope.Main(enabled, osclilloscopePlot);
+                await oscilloscope.Simulation(enabled, osclilloscopePlot);
             }
             else
             {
@@ -94,196 +91,12 @@ namespace OscilloscopeAndroid
             }
         }
 
-        public async Task Main()
-        {
-            try
-            {
-                transport.Connect();
-            }
-            catch (Exception exc)
-            {
-                Toast.MakeText(ApplicationContext, "Нет соединения" + exc.ToString(), ToastLength.Long).Show();
-                throw new Exception();
-            }
-
-            try
-            {
-                float[][] DataBuffer = new float[][] { new float[oscilloscope.DataSize], new float[oscilloscope.DataSize],
-                    new float[oscilloscope.DataSize], new float[oscilloscope.DataSize] };
-                device = new B320Oscilloscope(transport);
-                device.ClearProtocol();
-                device.InitDDR(true);
-                device.Reset(true);
-                device.SetMeasMode(false, true);
-                //device.ReadCalibrations();
-                var res = device.GetIDs();
-
-                //Вывод
-                String outText = (res.Serial).ToString() + "  " + (res.FPGAVersion).ToString() + "  " + (res.TypeID).ToString();
-                Toast.MakeText(ApplicationContext, outText, ToastLength.Long).Show();
-                oscilloscope.ApplySettings(settings);
-
-
-                while (true)
-                {
-                    //----------- Основные методы
-                    oscilloscope.Start();
-                    await oscilloscope.GetDataStatus();
-                    DataBuffer = oscilloscope.ReadData();
-                    //ShowData(DataBuffer);
-                    view.Model = CreatePlotModel();
-                    //UpdatePlot(view.Model, DataBuffer);
-
-                    await Task.Delay(10000);
-                    if (!enabled)
-                        break;
-                }
-            }
-            catch (Exception ex)
-            {
-                Toast.MakeText(ApplicationContext, "Критическая ошибка:"+ ex.Message, ToastLength.Long).Show();
-                enabled = false;
-            }
-        }
 
         private void ButtinSettings_Click(object sender, System.EventArgs e)
         {
             StartActivity(settings.getSettingsIntent(this));
         }
 
-
-        private PlotModel CreatePlotModel()
-        {
-            //var plotModel = new PlotModel { Title = "Linear Axis", TitleColor = OxyColors.GhostWhite, TextColor = OxyColors.GhostWhite };
-            var plotModel = new PlotModel { TextColor = OxyColors.GhostWhite };
-
-            plotModel.PlotAreaBorderColor = OxyColors.White;
-
-            plotModel.Axes.Add(new LinearAxis
-            {
-                Position = AxisPosition.Bottom,
-                Maximum = (oscilloscope.DataSize - 1) * x_scale,
-                Minimum = 0,
-                TickStyle = TickStyle.Crossing,
-                MajorGridlineStyle = LineStyle.Dash,
-                MajorGridlineColor = OxyColor.Parse("#4A4A4A"),
-                MinorGridlineStyle = LineStyle.Dash,
-                MinorGridlineColor = OxyColor.Parse("#4A4A4A"),
-                TicklineColor = OxyColors.GhostWhite
-            });
-
-            plotModel.Axes.Add(new LinearAxis
-            {
-                //IsZoomEnabled = false,    //можно ли зумить оси, должно стоять у двух
-                Position = AxisPosition.Left,
-                Maximum = 6 * y_scale,
-                Minimum = -6 * y_scale,
-                MajorGridlineStyle = LineStyle.Solid,
-                MajorGridlineColor = OxyColor.Parse("#4A4A4A"),
-                MinorGridlineStyle = LineStyle.Solid,
-                MinorGridlineColor = OxyColor.Parse("#4A4A4A"),
-                TicklineColor = OxyColors.GhostWhite
-            });
-            return plotModel;
-        }
-
-        private void UpdatePlot(PlotModel plot, float[][] data)
-        {
-            plot.Series.Clear();
-
-            var series1 = new LineSeries
-            {
-                Title = "A",
-                MarkerType = MarkerType.None,
-                StrokeThickness = 1,
-                //MarkerSize = 2,
-                //MarkerStroke = OxyColors.White,
-                Color = OxyColors.Yellow
-            };
-
-            var series2 = new LineSeries
-            {
-                Title = "B",
-                MarkerType = MarkerType.None,
-                StrokeThickness = 1,
-                //MarkerSize = 2,
-                //MarkerStroke = OxyColors.Black
-                Color = OxyColor.Parse("#0895d8")
-            };
-
-            //Эмяляция данных на графике
-            GenerateData1(series1);
-            GenerateData2(series2);
-
-            //AddData(series1, data, 0);
-            //AddData(series2, data, 1);
-
-
-            plot.Series.Add(series1);
-            plot.Series.Add(series2);
-        }
-
-        private void AddData(LineSeries series, float[][] data, int channel)
-        {
-            DataPoint point;
-            for (int i = 0; i < data[channel].Length; i++)
-            {
-                point = new DataPoint(i, data[channel][i]);
-
-                series.Points.Add(point);
-            }
-        }
-
-        private void GenerateData1(LineSeries series)
-        {
-
-            DataPoint point;
-            Random rnd = new Random();
-            for (int i = 0; i < 50; i++)
-            {
-                point = new DataPoint(i, rnd.Next(0, 10));
-
-                series.Points.Add(point);
-            }
-        }
-
-        private void GenerateData2(LineSeries series)
-        {
-
-            DataPoint point;
-            Random rnd = new Random();
-            for (int i = 0; i < 50; i++)
-            {
-                point = new DataPoint(i, rnd.Next(0, 10) + 0.5);
-                series.Points.Add(point);
-            }
-        }
-
-        private void AxisX_increment(object sender, EventArgs e)
-        {
-            x_scale += 0.1f;
-        }
-
-        private void AxisX_decrease(object sender, EventArgs e)
-        {
-            x_scale -= 0.1f;
-        }
-
-        private void AxisY_increment(object sender, EventArgs e)
-        {
-            if (y_scale >= 0.2f)
-            {
-                y_scale += 0.1f;
-            }
-        }
-
-        private void AxisY_decrease(object sender, EventArgs e)
-        {
-            if (y_scale >= 0.2f)
-            {
-                y_scale -= 0.1f;
-            }
-        }
     }
 }
 
