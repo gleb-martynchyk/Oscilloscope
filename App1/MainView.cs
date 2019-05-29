@@ -50,6 +50,7 @@ namespace OscilloscopeAndroid
 
             Switch enableSwitch = FindViewById<Switch>(Resource.Id.switch1);
 
+            //TODO exception null reference
             osclilloscopePlot.View = FindViewById<PlotView>(Resource.Id.plot_view);
 
             // INIT
