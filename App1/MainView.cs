@@ -10,9 +10,6 @@ using Android.Content;
 using MeterFramework.AlmaMeter;
 using BECSLibrary.Transport;
 
-using OxyPlot;
-using OxyPlot.Axes;
-using OxyPlot.Series;
 using OxyPlot.Xamarin.Android;
 
 namespace OscilloscopeAndroid
@@ -23,19 +20,18 @@ namespace OscilloscopeAndroid
         private TCPIPTransport transport = new TCPIPTransport();
         private Oscilloscope oscilloscope;
         private Settings settings;
-        private B320Oscilloscope device;
         private OsclilloscopePlot osclilloscopePlot;
-        bool enabled = false;
+        private bool enabled = false;
 
 
         protected override void OnCreate(Bundle savedInstanceState)
         {
             base.OnCreate(savedInstanceState);
 
-            oscilloscope = new Oscilloscope(transport);
+            osclilloscopePlot = new OsclilloscopePlot();
+            oscilloscope = new Oscilloscope(transport, ApplicationContext);
             settings = new Settings();
             oscilloscope.Settings = settings;
-            device = oscilloscope.Device;
 
             try
             {
@@ -82,11 +78,12 @@ namespace OscilloscopeAndroid
             if (enabled == false)
             {
                 enabled = true;
-                //await oscilloscope.Main(enabled, osclilloscopePlot);
-                await oscilloscope.Simulation(enabled, osclilloscopePlot);
+                await oscilloscope.Main(osclilloscopePlot);
+                //await oscilloscope.Simulation(osclilloscopePlot);
             }
             else
             {
+                oscilloscope.StopMain();
                 transport.Disconnect();
                 enabled = false;
             }

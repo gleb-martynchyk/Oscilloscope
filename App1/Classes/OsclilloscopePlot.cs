@@ -40,6 +40,7 @@ namespace OscilloscopeAndroid
 
             view.Model.PlotAreaBorderColor = OxyColors.White;
 
+            //axis x - time
             view.Model.Axes.Add(new LinearAxis
             {
                 Position = AxisPosition.Bottom,
@@ -53,12 +54,13 @@ namespace OscilloscopeAndroid
                 TicklineColor = OxyColors.GhostWhite
             });
 
+            //axis x - time
             view.Model.Axes.Add(new LinearAxis
             {
                 //IsZoomEnabled = false,    //можно ли зумить оси, должно стоять у двух
                 Position = AxisPosition.Left,
-                Maximum = 6 * y_scale,
-                Minimum = -6 * y_scale,
+                Maximum = 2 * y_scale,
+                Minimum = -2 * y_scale,
                 MajorGridlineStyle = LineStyle.Solid,
                 MajorGridlineColor = OxyColor.Parse("#4A4A4A"),
                 MinorGridlineStyle = LineStyle.Solid,
@@ -68,7 +70,7 @@ namespace OscilloscopeAndroid
             return view.Model;
         }
 
-        public void UpdatePlot(float[][] data)
+        public void AddDataToPlot(float[][] data)
         {
             view.Model.Series.Clear();
 
@@ -93,49 +95,37 @@ namespace OscilloscopeAndroid
             };
 
             //Симуляция данных на графике
-            GenerateDataChannel1(series1);
-            GenerateDataChannel2(series2);
+            //AddData(series1, GenerateData());
+            //AddData(series2, GenerateData());
 
             //Реальные данные
-            //AddData(series1, data, 0);
-            //AddData(series2, data, 1);
+            AddData(series1, data[0]);
+            AddData(series2, data[1]);
 
             view.Model.Series.Add(series1);
             view.Model.Series.Add(series2);
         }
 
-        public void AddData(LineSeries series, float[][] data, int channel)
+        public void AddData(LineSeries series, float[] data)
         {
             DataPoint point;
-            for (int i = 0; i < data[channel].Length; i++)
+            for (int i = 0; i < data.Length; i++)
             {
-                point = new DataPoint(i, data[channel][i]);
-
+                point = new DataPoint(i, data[i]);
                 series.Points.Add(point);
             }
         }
 
-        public void GenerateDataChannel1(LineSeries series)
+        public float[] GenerateData()
         {
-            DataPoint point;
+            int dataSize = 30;
+            float[] data = new float[dataSize];
             Random rnd = new Random();
-            for (int i = 0; i < 50; i++)
+            for (int i = 0; i < dataSize; i++)
             {
-                point = new DataPoint(i, rnd.Next(0, 10));
-
-                series.Points.Add(point);
+                data[i] = rnd.Next(0, 10);
             }
-        }
-
-        public void GenerateDataChannel2(LineSeries series)
-        {
-            DataPoint point;
-            Random rnd = new Random();
-            for (int i = 0; i < 50; i++)
-            {
-                point = new DataPoint(i, rnd.Next(0, 10) + 0.5);
-                series.Points.Add(point);
-            }
+            return data;
         }
 
         public void AxisX_increment(object sender, EventArgs e)

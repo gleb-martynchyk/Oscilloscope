@@ -19,7 +19,7 @@ namespace OscilloscopeAndroid
         private bool[] activeChannels;
         private bool[] channelsRange;
         private double samplingPeriod;
-        private int dataSize = 30;
+        private int dataSize = 700;
         private ushort[] uInt16Buffer;
 
         public Settings()
@@ -70,19 +70,19 @@ namespace OscilloscopeAndroid
                 throw new Exception();
             }
             activeChannels = intent.GetBooleanArrayExtra("ActiveChannel");
-            if (activeChannels == new bool[] { false, false, false, false })
+            if (activeChannels == new bool[] { false, false })
             {
                 Toast.MakeText(context, "Включите хотя-бы 1 канал", ToastLength.Long).Show();
                 throw new Exception();
             }
             channelsRange = intent.GetBooleanArrayExtra("ChannelRange");
-            samplingPeriod = intent.GetDoubleExtra("SamplingPeriod", 1e-3);
+            samplingPeriod = intent.GetDoubleExtra("SamplingPeriod", 1e-6);
         }
 
         public void ResetSettings()
         {
-            ip = "192.168.0.141";
-            activeChannels = new bool[] { true, true, true, true };
+            ip = "10.128.11.141";
+            activeChannels = new bool[] { true, true};
             channelsRange = new bool[] { false, false };
             samplingPeriod = 1e-3;
         }

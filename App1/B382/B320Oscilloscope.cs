@@ -220,7 +220,7 @@ namespace MeterFramework.AlmaMeter
 
         public override uint SamplingPeriodMinCode
         {
-            get { return 1000; }
+            get { return 100; }
         }
 
         public override uint SamplingPeriodMaxCode
@@ -358,7 +358,7 @@ namespace MeterFramework.AlmaMeter
             SetReadAddress((uint)address, false);
 
             R4RegisterBase r4;
-            double maxTryTime = 0.3; //сек
+            double maxTryTime = 1; //сек
             DateTime startTime = DateTime.Now;
 
             while (true)

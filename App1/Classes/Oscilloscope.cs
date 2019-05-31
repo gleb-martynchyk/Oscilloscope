@@ -23,12 +23,14 @@ namespace OscilloscopeAndroid
         private ushort[] UInt16Buffer;
         private Context applicationContext;
         private OsclilloscopePlot plot;
+        private bool enabled = false;
 
-        public Oscilloscope(TCPIPTransport transport)
+        public Oscilloscope(TCPIPTransport transport, Context applicationContext)
         {
             this.device = new B320Oscilloscope(transport);
             this.transport = transport;
             this.UInt16Buffer = new ushort[0];
+            this.applicationContext = applicationContext;
         }
 
         public B320Oscilloscope Device
@@ -53,8 +55,11 @@ namespace OscilloscopeAndroid
             set { applicationContext = value; }
         }
 
-        public async Task Main(bool enabled, OsclilloscopePlot osclilloscopePlot)
+        public async Task Main(OsclilloscopePlot osclilloscopePlot)
         {
+            enabled = true;
+            plot = new OsclilloscopePlot();
+
             try
             {
                 transport.Connect();
@@ -67,36 +72,32 @@ namespace OscilloscopeAndroid
 
             try
             {
-                plot = new OsclilloscopePlot();
-                float[][] DataBuffer = new float[][] { new float[settings.DataSize], new float[settings.DataSize],
-                    new float[settings.DataSize], new float[settings.DataSize] };
+                float[][] DataBuffer = new float[][] { new float[settings.DataSize], new float[settings.DataSize] };
                 device = new B320Oscilloscope(transport);
                 device.ClearProtocol();
-                device.InitDDR(true);
                 device.Reset(true);
-                device.SetMeasMode(false, true);
+                device.InitDDR(true);
+                //no logger
+                //device.SetMeasMode(false, true);
+                device.SetMeasMode(true, true);
                 //device.ReadCalibrations();
                 var res = device.GetIDs();
 
                 //Вывод
-                String outText = (res.Serial).ToString() + "  " + (res.FPGAVersion).ToString() + "  " + (res.TypeID).ToString();
-                Toast.MakeText(applicationContext, outText, ToastLength.Long).Show();
+                //String outText = (res.Serial).ToString() + "  " + (res.FPGAVersion).ToString() + "  " + (res.TypeID).ToString();
+                //Toast.MakeText(applicationContext, outText, ToastLength.Long).Show();
+
                 ApplySettings(settings);
 
-
-                while (true)
+                while (enabled)
                 {
-                    //----------- Основные методы
                     Start();
                     await GetDataStatus();
-                    DataBuffer = ReadData();
-                    //ShowData(DataBuffer);
+                    DataBuffer = GetData();
                     osclilloscopePlot.CreatePlotModel(settings);
-                    osclilloscopePlot.UpdatePlot(DataBuffer);
+                    osclilloscopePlot.AddDataToPlot(DataBuffer);
 
-                    await Task.Delay(10000);
-                    if (!enabled)
-                        break;
+                    await Task.Delay(100);
                 }
             }
             catch (Exception ex)
@@ -106,21 +107,18 @@ namespace OscilloscopeAndroid
             }
         }
 
-        public async Task Simulation(bool enabled, OsclilloscopePlot osclilloscopePlot)
+        public async Task Simulation(OsclilloscopePlot osclilloscopePlot)
         {
+            enabled = true;
+            plot = new OsclilloscopePlot();
             try
             {
-                plot = new OsclilloscopePlot();
-
-                while (true)
+                while (enabled)
                 {
                     osclilloscopePlot.CreatePlotModel(settings);
-                    osclilloscopePlot.UpdatePlot(null);
+                    osclilloscopePlot.AddDataToPlot(null);
 
                     await Task.Delay(33);
-
-                    if (enabled == false)
-                        break;
                 }
             }
             catch (Exception ex)
@@ -128,6 +126,11 @@ namespace OscilloscopeAndroid
                 Toast.MakeText(applicationContext, "Критическая ошибка:" + ex.Message, ToastLength.Long).Show();
                 enabled = false;
             }
+        }
+
+        public void StopMain()
+        {
+            enabled = false;
         }
 
         public void Start()
@@ -156,40 +159,17 @@ namespace OscilloscopeAndroid
             Toast.MakeText(applicationContext, "data is ready", ToastLength.Long).Show();
         }
 
-        public void ShowData(float[][] data)
+        public float[][] GetData()
         {
-            double[] avr = new double[] { 0, 0, 0, 0 };
-            int n = data[1].Length;
-            int ActiveChannelCount = 0;
-            for (int j = 0; j < settings.ActiveChannels.Length; j++)
+            if (!IsConnected)
             {
-                if (settings.ActiveChannels[j] == true)
-                    ActiveChannelCount++;
+                Toast.MakeText(applicationContext, "Устройство не готово к  данных", ToastLength.Long).Show();
+                throw new Exception();
             }
 
-            for (int j = 0; j < n; j++)
-            {
-
-                avr[0] += data[0][j];
-                if (ActiveChannelCount >= 2)
-                    avr[1] += data[1][j];
-                if (ActiveChannelCount >= 3)
-                    avr[2] += data[2][j];
-                if (ActiveChannelCount >= 4)
-                    avr[3] += data[3][j];
-            }
-            int i = 0;
-        }
-
-        public float[][] ReadData()
-        {
-            //if (!IsConnected)
-            //{
-            //    Toast.MakeText(ApplicationContext, "Устройство не готово к  данных", ToastLength.Long).Show();
-            //    throw new Exception();
-            //}
             float[][] _DataBuffer = new float[][] { new float[settings.DataSize], new float[settings.DataSize] };
             int ActiveChannelCount = 0;
+
             for (int i = 0; i < settings.ActiveChannels.Length; i++)
             {
                 if (settings.ActiveChannels[i])
@@ -202,20 +182,25 @@ namespace OscilloscopeAndroid
             R4RegisterBase r4 = device.GetStatus();
             uint Start = (uint)(r4.PreReg - (r4.PreReg % ActiveChannelCount));
             // Указываем адрес, откуда будем читать
-            device.PrepareForReading(Start);
+            uint segment = (Start) >> 8;
+            uint offset = (Start) & 0xFF;
+
+            // Указываем адрес, откуда будем читать
+            device.PrepareForReading((uint)segment);
             int count = settings.DataSize * ActiveChannelCount;
 
-            Array.Resize(ref UInt16Buffer, count);
+            Array.Resize(ref UInt16Buffer, (int)(count + offset));
             device.GetData(UInt16Buffer);
 
             //Calibration[] calibrs = GetCurrentCallibrations(_Device);
 
             for (int k = 0, j = 0; j < settings.DataSize; j++)
             {
-                for (int i = 0; i < ChannelCount; i++)
+                for (int i = 0; i < ActiveChannelCount; i++)
                     if (_DataBuffer[i].Length > 0)
                     {
-                        _DataBuffer[i][j] = ParseRawData(UInt16Buffer[k]);
+                        _DataBuffer[i][j] = ParseRawData(UInt16Buffer[k + offset]);
+                        //_DataBuffer[i][j] = (float)UInt16Buffer[offset + ActiveChannelCount * j];
                         k++;
                     }
             }
@@ -225,21 +210,28 @@ namespace OscilloscopeAndroid
 
         public void ApplySettings(Settings settings)
         {
+            device.ClearProtocol();
+            device.Reset(false);
             // TODO: должно куда-то сохранять данные, файл xml
             //device.SetChStates(activeChannels[0], activeChannels[1], activeChannels[2], activeChannels[3], false); //Все 4 канала включены true
-            device.SetChStates(true, true, false); //Все 4 канала включены true
-            device.SetSegment(0, settings.DataSize, true);
+            device.SetChStates(true, true, false);
+            device.SetSegment(0, settings.DataSize, false);
 
             device.SetSamplingPeriod(settings.SamplingPeriod, true);
 
-            device.SetGains(true, true, true, false, false,
-                             true, true, true, false, false, true);
+            //Device.SetSynchSettings
+
+            device.SetGains(true, false, false, false, false,
+                             true, false, false, false, false, true);
+
             device.FlushProtocol();
         }
 
         protected virtual float ParseRawData(ushort value)
         {
-            return (value - 32768) * 30f / (32768f);
+            //умножать на диапазон
+            //return (value - 32768) * 1f / (32768f);
+            return ((short)value) / (4098f);
             //return calibr.ToValue(value);
             //return value / 10000.0f;
         }
