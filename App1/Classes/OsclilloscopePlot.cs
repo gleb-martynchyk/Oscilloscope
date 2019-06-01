@@ -59,8 +59,8 @@ namespace OscilloscopeAndroid
             {
                 //IsZoomEnabled = false,    //можно ли зумить оси, должно стоять у двух
                 Position = AxisPosition.Left,
-                Maximum = 2 * y_scale,
-                Minimum = -2 * y_scale,
+                Maximum = 1.2 * y_scale,
+                Minimum = 0 * y_scale,
                 MajorGridlineStyle = LineStyle.Solid,
                 MajorGridlineColor = OxyColor.Parse("#4A4A4A"),
                 MinorGridlineStyle = LineStyle.Solid,

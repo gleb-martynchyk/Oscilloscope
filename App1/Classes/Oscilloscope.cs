@@ -20,7 +20,7 @@ namespace OscilloscopeAndroid
         private B320Oscilloscope device;
         private TCPIPTransport transport;
         private Settings settings;
-        private ushort[] UInt16Buffer;
+        private ushort[][] UInt16Buffer;
         private Context applicationContext;
         private OsclilloscopePlot plot;
         private bool enabled = false;
@@ -29,7 +29,7 @@ namespace OscilloscopeAndroid
         {
             this.device = new B320Oscilloscope(transport);
             this.transport = transport;
-            this.UInt16Buffer = new ushort[0];
+            this.UInt16Buffer = new ushort[][] { new ushort[0], new ushort[0] };
             this.applicationContext = applicationContext;
         }
 
@@ -77,9 +77,8 @@ namespace OscilloscopeAndroid
                 device.ClearProtocol();
                 device.Reset(true);
                 device.InitDDR(true);
-                //no logger
-                //device.SetMeasMode(false, true);
-                device.SetMeasMode(true, true);
+                device.SetMeasMode(false, true);
+
                 //device.ReadCalibrations();
                 var res = device.GetIDs();
 
@@ -97,7 +96,7 @@ namespace OscilloscopeAndroid
                     osclilloscopePlot.CreatePlotModel(settings);
                     osclilloscopePlot.AddDataToPlot(DataBuffer);
 
-                    await Task.Delay(100);
+                    //await Task.Delay(100);
                 }
             }
             catch (Exception ex)
@@ -152,12 +151,12 @@ namespace OscilloscopeAndroid
 
             while (!r4.MemIsEnd)
             {
-                await Task.Delay(200);
+                await Task.Delay(100);
                 r4 = device.GetStatus();
             }
-            //Message: data is ready
-            Toast.MakeText(applicationContext, "data is ready", ToastLength.Long).Show();
+            //Toast.MakeText(applicationContext, "data is ready", ToastLength.Long).Show();
         }
+
 
         public float[][] GetData()
         {
@@ -176,12 +175,11 @@ namespace OscilloscopeAndroid
                     ActiveChannelCount++;
             }
 
-            ActiveChannelCount = 2;
+            ActiveChannelCount = 1;
 
             device.ClearProtocol();
             R4RegisterBase r4 = device.GetStatus();
             uint Start = (uint)(r4.PreReg - (r4.PreReg % ActiveChannelCount));
-            // Указываем адрес, откуда будем читать
             uint segment = (Start) >> 8;
             uint offset = (Start) & 0xFF;
 
@@ -189,20 +187,18 @@ namespace OscilloscopeAndroid
             device.PrepareForReading((uint)segment);
             int count = settings.DataSize * ActiveChannelCount;
 
-            Array.Resize(ref UInt16Buffer, (int)(count + offset));
-            device.GetData(UInt16Buffer);
+            Array.Resize(ref UInt16Buffer[0], (int)(count + offset));
+            Array.Resize(ref UInt16Buffer[1], (int)(count + offset));
+
+            device.GetData1(UInt16Buffer[0]);
+            device.GetData2(UInt16Buffer[1]);
 
             //Calibration[] calibrs = GetCurrentCallibrations(_Device);
 
-            for (int k = 0, j = 0; j < settings.DataSize; j++)
+            for (int i = 0; i < settings.DataSize; i++)
             {
-                for (int i = 0; i < ActiveChannelCount; i++)
-                    if (_DataBuffer[i].Length > 0)
-                    {
-                        _DataBuffer[i][j] = ParseRawData(UInt16Buffer[k + offset]);
-                        //_DataBuffer[i][j] = (float)UInt16Buffer[offset + ActiveChannelCount * j];
-                        k++;
-                    }
+                _DataBuffer[0][i] = ParseRawData(UInt16Buffer[0][i + offset]);
+                _DataBuffer[1][i] = ParseRawData(UInt16Buffer[1][i + offset]);
             }
 
             return _DataBuffer;
@@ -211,18 +207,18 @@ namespace OscilloscopeAndroid
         public void ApplySettings(Settings settings)
         {
             device.ClearProtocol();
-            device.Reset(false);
+            device.Reset(true);
             // TODO: должно куда-то сохранять данные, файл xml
             //device.SetChStates(activeChannels[0], activeChannels[1], activeChannels[2], activeChannels[3], false); //Все 4 канала включены true
-            device.SetChStates(true, true, false);
-            device.SetSegment(0, settings.DataSize, false);
+            device.SetChStates(true, true, true);
+            device.SetSegment(0, settings.DataSize, true);
 
             device.SetSamplingPeriod(settings.SamplingPeriod, true);
 
             //Device.SetSynchSettings
 
-            device.SetGains(true, false, false, false, false,
-                             true, false, false, false, false, true);
+            device.SetGains(false, true, false, false, false,
+                             false, true, true, false, false, true);
 
             device.FlushProtocol();
         }
@@ -231,7 +227,7 @@ namespace OscilloscopeAndroid
         {
             //умножать на диапазон
             //return (value - 32768) * 1f / (32768f);
-            return ((short)value) / (4098f);
+            return ((short)value) / (1024f);
             //return calibr.ToValue(value);
             //return value / 10000.0f;
         }

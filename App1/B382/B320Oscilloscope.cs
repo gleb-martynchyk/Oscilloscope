@@ -548,17 +548,18 @@ namespace MeterFramework.AlmaMeter
 
         #region < Регистр R0: Данные >
 
-        public void GetData(ushort[] buffer)
+        public void GetData1(ushort[] buffer)
         {
+            //data on first channel
             Register<ushort> r0 = new Register<ushort>(0, buffer);
             _Protocol.SendRequestAndReadRegister(r0);
         }
 
-        public ushort[] GetData(int count)
+        public void GetData2(ushort[] buffer)
         {
-            ushort[] buffer = new ushort[count];
-            GetData(buffer);
-            return buffer;
+            //data on second channel
+            Register<ushort> r5 = new Register<ushort>(5, buffer);
+            _Protocol.SendRequestAndReadRegister(r5);
         }
 
         #endregion < Регистр R0: Данные >
