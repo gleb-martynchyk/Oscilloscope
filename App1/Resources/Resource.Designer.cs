@@ -3215,7 +3215,7 @@ namespace OscilloscopeAndroid
 			public const int select_dialog_singlechoice_material = 2131361850;
 			
 			// aapt resource value: 0x7F0A003B
-			public const int SettingsLayout = 2131361851;
+			public const int settings = 2131361851;
 			
 			// aapt resource value: 0x7F0A003C
 			public const int support_simple_spinner_dropdown_item = 2131361852;

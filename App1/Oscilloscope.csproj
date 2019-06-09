@@ -132,7 +132,7 @@
     <Folder Include="Resources\layout-notlong-port\" />
   </ItemGroup>
   <ItemGroup>
-    <AndroidResource Include="Resources\layout\SettingsLayout.axml">
+    <AndroidResource Include="Resources\layout\settings.axml">
       <SubType>Designer</SubType>
     </AndroidResource>
   </ItemGroup>

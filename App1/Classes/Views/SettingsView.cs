@@ -23,7 +23,7 @@ namespace OscilloscopeAndroid
         protected override void OnCreate(Bundle savedInstanceState)
         {
             base.OnCreate(savedInstanceState);
-            SetContentView(Resource.Layout.SettingsLayout);
+            SetContentView(Resource.Layout.settings);
             // Create your application here
             IP = Intent.GetStringExtra("IP");
             activeChannel = Intent.GetBooleanArrayExtra("ActiveChannel");
