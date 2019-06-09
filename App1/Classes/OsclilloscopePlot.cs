@@ -22,9 +22,11 @@ namespace OscilloscopeAndroid
         private PlotView view;
         private float x_scale = 1;
         private float y_scale = 1;
+        private int dataSize;
 
-        public OsclilloscopePlot()
+        public OsclilloscopePlot(int datasize)
         {
+            this.dataSize = datasize;
         }
 
         public PlotView View
@@ -33,7 +35,7 @@ namespace OscilloscopeAndroid
             set { view = value; }
         }
 
-        public PlotModel CreatePlotModel(Settings settings)
+        public void CreatePlotModel()
         {
             //this.model = new PlotModel { Title = "Linear Axis", TitleColor = OxyColors.GhostWhite, TextColor = OxyColors.GhostWhite };
             view.Model = new PlotModel { TextColor = OxyColors.GhostWhite };
@@ -44,7 +46,7 @@ namespace OscilloscopeAndroid
             view.Model.Axes.Add(new LinearAxis
             {
                 Position = AxisPosition.Bottom,
-                Maximum = (settings.DataSize - 1) * x_scale,
+                Maximum = (dataSize - 1) * x_scale,
                 Minimum = 0,
                 TickStyle = TickStyle.Crossing,
                 MajorGridlineStyle = LineStyle.Dash,
@@ -59,15 +61,19 @@ namespace OscilloscopeAndroid
             {
                 //IsZoomEnabled = false,    //можно ли зумить оси, должно стоять у двух
                 Position = AxisPosition.Left,
-                Maximum = 1.2 * y_scale,
-                Minimum = 0 * y_scale,
+                Maximum = 12 * y_scale,
+                Minimum = -2 * y_scale,
                 MajorGridlineStyle = LineStyle.Solid,
                 MajorGridlineColor = OxyColor.Parse("#4A4A4A"),
                 MinorGridlineStyle = LineStyle.Solid,
                 MinorGridlineColor = OxyColor.Parse("#4A4A4A"),
                 TicklineColor = OxyColors.GhostWhite
             });
-            return view.Model;
+        }
+
+        public void UpdatePlotModel()
+        {
+            view.Model.InvalidatePlot(true);
         }
 
         public void AddDataToPlot(float[][] data)
@@ -95,12 +101,12 @@ namespace OscilloscopeAndroid
             };
 
             //Симуляция данных на графике
-            //AddData(series1, GenerateData());
-            //AddData(series2, GenerateData());
+            AddData(series1, GenerateData());
+            AddData(series2, GenerateData());
 
             //Реальные данные
-            AddData(series1, data[0]);
-            AddData(series2, data[1]);
+            //AddData(series1, data[0]);
+            //AddData(series2, data[1]);
 
             view.Model.Series.Add(series1);
             view.Model.Series.Add(series2);
@@ -118,7 +124,6 @@ namespace OscilloscopeAndroid
 
         public float[] GenerateData()
         {
-            int dataSize = 30;
             float[] data = new float[dataSize];
             Random rnd = new Random();
             for (int i = 0; i < dataSize; i++)

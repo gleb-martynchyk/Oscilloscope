@@ -28,11 +28,11 @@ namespace OscilloscopeAndroid
         {
             base.OnCreate(savedInstanceState);
 
-            osclilloscopePlot = new OsclilloscopePlot();
             oscilloscope = new Oscilloscope(transport, ApplicationContext);
             settings = new Settings();
             oscilloscope.Settings = settings;
-
+            osclilloscopePlot = new OsclilloscopePlot(settings.DataSize);
+            
             try
             {
                 settings.SetSettings(Intent, ApplicationContext);
@@ -78,8 +78,8 @@ namespace OscilloscopeAndroid
             if (enabled == false)
             {
                 enabled = true;
-                await oscilloscope.Main(osclilloscopePlot);
-                //await oscilloscope.Simulation(osclilloscopePlot);
+                //await oscilloscope.Main(osclilloscopePlot);
+                await oscilloscope.Simulation(osclilloscopePlot);
             }
             else
             {

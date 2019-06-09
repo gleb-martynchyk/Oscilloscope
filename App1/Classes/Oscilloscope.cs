@@ -58,7 +58,7 @@ namespace OscilloscopeAndroid
         public async Task Main(OsclilloscopePlot osclilloscopePlot)
         {
             enabled = true;
-            plot = new OsclilloscopePlot();
+            plot = new OsclilloscopePlot(settings.DataSize);
 
             try
             {
@@ -93,7 +93,7 @@ namespace OscilloscopeAndroid
                     Start();
                     await GetDataStatus();
                     DataBuffer = GetData();
-                    osclilloscopePlot.CreatePlotModel(settings);
+                    osclilloscopePlot.CreatePlotModel();
                     osclilloscopePlot.AddDataToPlot(DataBuffer);
 
                     //await Task.Delay(100);
@@ -109,14 +109,14 @@ namespace OscilloscopeAndroid
         public async Task Simulation(OsclilloscopePlot osclilloscopePlot)
         {
             enabled = true;
-            plot = new OsclilloscopePlot();
+            plot = new OsclilloscopePlot(settings.DataSize);
             try
             {
+                osclilloscopePlot.CreatePlotModel();
                 while (enabled)
                 {
-                    osclilloscopePlot.CreatePlotModel(settings);
+                    osclilloscopePlot.UpdatePlotModel();
                     osclilloscopePlot.AddDataToPlot(null);
-
                     await Task.Delay(33);
                 }
             }
