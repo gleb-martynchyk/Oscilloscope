@@ -110,21 +110,21 @@ namespace OscilloscopeAndroid
         {
             enabled = true;
             plot = new OsclilloscopePlot(settings.DataSize);
-            try
-            {
+            //try
+            //{
                 osclilloscopePlot.CreatePlotModel();
                 while (enabled)
                 {
                     osclilloscopePlot.UpdatePlotModel();
-                    osclilloscopePlot.AddDataToPlot(null);
+                    osclilloscopePlot.AddFakeDataToPlot(settings);
                     await Task.Delay(33);
                 }
-            }
-            catch (Exception ex)
-            {
-                Toast.MakeText(applicationContext, "Критическая ошибка:" + ex.Message, ToastLength.Long).Show();
-                enabled = false;
-            }
+            //}
+            //catch (Exception ex)
+            //{
+            //    Toast.MakeText(applicationContext, "Критическая ошибка:" + ex.Message, ToastLength.Long).Show();
+            //    enabled = false;
+            //}
         }
 
         public void StopMain()
@@ -175,8 +175,6 @@ namespace OscilloscopeAndroid
                     ActiveChannelCount++;
             }
 
-            ActiveChannelCount = 1;
-
             device.ClearProtocol();
             R4RegisterBase r4 = device.GetStatus();
             uint Start = (uint)(r4.PreReg - (r4.PreReg % ActiveChannelCount));
@@ -217,8 +215,7 @@ namespace OscilloscopeAndroid
 
             //Device.SetSynchSettings
 
-            device.SetGains(false, true, false, false, false,
-                             false, true, true, false, false, true);
+            device.SetGains(settings.ChannelARange, settings.ChannelBRange, true);
 
             device.FlushProtocol();
         }

@@ -46,8 +46,8 @@ namespace OscilloscopeAndroid
             view.Model.Axes.Add(new LinearAxis
             {
                 Position = AxisPosition.Bottom,
-                Maximum = (dataSize - 1) * x_scale,
-                Minimum = 0,
+                //Maximum = (dataSize - 1) * x_scale,
+                //Minimum = 0,
                 TickStyle = TickStyle.Crossing,
                 MajorGridlineStyle = LineStyle.Dash,
                 MajorGridlineColor = OxyColor.Parse("#4A4A4A"),
@@ -61,8 +61,8 @@ namespace OscilloscopeAndroid
             {
                 //IsZoomEnabled = false,    //можно ли зумить оси, должно стоять у двух
                 Position = AxisPosition.Left,
-                Maximum = 12 * y_scale,
-                Minimum = -2 * y_scale,
+                //Maximum = 12 * y_scale,
+                //Minimum = -2 * y_scale,
                 MajorGridlineStyle = LineStyle.Solid,
                 MajorGridlineColor = OxyColor.Parse("#4A4A4A"),
                 MinorGridlineStyle = LineStyle.Solid,
@@ -101,8 +101,48 @@ namespace OscilloscopeAndroid
             };
 
             //Симуляция данных на графике
-            AddData(series1, GenerateData());
-            AddData(series2, GenerateData());
+            Random random = new Random();
+            AddData(series1, GenerateData(random));
+            //if (data.Length == 2)
+            AddData(series2, GenerateData(random));
+
+            //Реальные данные
+            //AddData(series1, data[0]);
+            //AddData(series2, data[1]);
+
+            view.Model.Series.Add(series1);
+            view.Model.Series.Add(series2);
+        }
+
+        public void AddFakeDataToPlot(Settings settings)
+        {
+            view.Model.Series.Clear();
+
+            var series1 = new LineSeries
+            {
+                Title = "A",
+                MarkerType = MarkerType.None,
+                StrokeThickness = 1,
+                //MarkerSize = 2,
+                //MarkerStroke = OxyColors.White,
+                Color = OxyColors.Yellow
+            };
+
+            var series2 = new LineSeries
+            {
+                Title = "B",
+                MarkerType = MarkerType.None,
+                StrokeThickness = 1,
+                //MarkerSize = 2,
+                //MarkerStroke = OxyColors.Black
+                Color = OxyColor.Parse("#0895d8")
+            };
+
+            //Симуляция данных на графике
+            Random random = new Random();
+            AddData(series1, GenerateData(random));
+            if (settings.ActiveChannels.Length == 2)
+                AddData(series2, GenerateData(random));
 
             //Реальные данные
             //AddData(series1, data[0]);
@@ -122,13 +162,12 @@ namespace OscilloscopeAndroid
             }
         }
 
-        public float[] GenerateData()
+        public float[] GenerateData(Random random)
         {
             float[] data = new float[dataSize];
-            Random rnd = new Random();
             for (int i = 0; i < dataSize; i++)
             {
-                data[i] = rnd.Next(0, 10);
+                data[i] = random.Next(0, 12);
             }
             return data;
         }

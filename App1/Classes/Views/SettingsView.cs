@@ -18,7 +18,8 @@ namespace OscilloscopeAndroid
         TextView IpText;
         public string IP = "10.128.11.141";
         public bool[] activeChannel;
-        public bool[] ChannelRange;
+        public bool[] channelARange;
+        public bool[] channelBRange;
         public double SamplingPeriod;
         protected override void OnCreate(Bundle savedInstanceState)
         {
@@ -26,9 +27,10 @@ namespace OscilloscopeAndroid
             SetContentView(Resource.Layout.settings);
             // Create your application here
             IP = Intent.GetStringExtra("IP");
-            activeChannel = Intent.GetBooleanArrayExtra("ActiveChannel");
-            ChannelRange = Intent.GetBooleanArrayExtra("ChannelRange");
-            SamplingPeriod = Intent.GetDoubleExtra("SamplingPeriod",1e-3);
+            activeChannel = Intent.GetBooleanArrayExtra("activeChannels");
+            channelARange = Intent.GetBooleanArrayExtra("channelARange");
+            channelBRange = Intent.GetBooleanArrayExtra("channelBRange");
+            SamplingPeriod = Intent.GetDoubleExtra("samplingPeriod", 1e-3);
 
             IpText = FindViewById<TextView>(Resource.Id.textInputEditText1);
             save = FindViewById<Button>(OscilloscopeAndroid.Resource.Id.ButtonSave);

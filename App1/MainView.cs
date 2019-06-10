@@ -11,10 +11,11 @@ using MeterFramework.AlmaMeter;
 using BECSLibrary.Transport;
 
 using OxyPlot.Xamarin.Android;
+using Android.Content.PM;
 
 namespace OscilloscopeAndroid
 {
-    [Activity(Label = "@string/app_name", Theme = "@style/AppTheme", MainLauncher = true)]
+    [Activity(Label = "@string/app_name", Theme = "@style/AppTheme", MainLauncher = true, ScreenOrientation = ScreenOrientation.Landscape)]
     public class MainView : AppCompatActivity
     {
         private TCPIPTransport transport = new TCPIPTransport();
@@ -23,11 +24,9 @@ namespace OscilloscopeAndroid
         private OsclilloscopePlot osclilloscopePlot;
         private bool enabled = false;
 
-
         protected override void OnCreate(Bundle savedInstanceState)
         {
             base.OnCreate(savedInstanceState);
-
             oscilloscope = new Oscilloscope(transport, ApplicationContext);
             settings = new Settings();
             oscilloscope.Settings = settings;

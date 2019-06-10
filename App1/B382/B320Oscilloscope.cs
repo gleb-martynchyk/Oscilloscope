@@ -454,6 +454,15 @@ namespace MeterFramework.AlmaMeter
                 FlushProtocol();
         }
 
+        public void SetGains(bool[] rangeA, bool[] rangeB, bool flush)
+        {
+            W8Register w8 = new W8Register(true, rangeA[0], rangeA[1], rangeA[2], rangeA[3],
+                                            true, rangeB[0], rangeB[1], rangeB[2], rangeB[3]);
+            _Protocol.PrepareWriteRequest(w8);
+            if (flush)
+                FlushProtocol();
+        }
+
         #endregion < Регистр W2: Режим работы канала >
 
         #region < Регистр W9: Синхронизация>
