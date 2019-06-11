@@ -56,14 +56,15 @@ namespace OscilloscopeAndroid
                     throw new Exception();
                 }
                 intent.PutExtra("IP", IP);
-                intent.PutExtra("ActiveChannel", activeChannel);
+                intent.PutExtra("activeChannels", activeChannel);
                 if (activeChannel[0] == false && activeChannel[1] == false && activeChannel[2] == false && activeChannel[3] == false)
                 {
                     Toast.MakeText(ApplicationContext, "Включите хотя-бы 1 канал", ToastLength.Long).Show();
                     throw new Exception();
                 }
-                intent.PutExtra("ChannelRange", ChannelRange);
-                intent.PutExtra("SamplingPeriod", SamplingPeriod);
+                intent.PutExtra("channelARange", channelARange);
+                intent.PutExtra("channelBRange", channelBRange);
+                intent.PutExtra("samplingPeriod", SamplingPeriod);
                 StartActivity(intent);
             }
             catch { }

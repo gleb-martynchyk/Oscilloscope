@@ -91,6 +91,7 @@ namespace OscilloscopeAndroid
 
         private void ButtinSettings_Click(object sender, System.EventArgs e)
         {
+            enabled = false;
             StartActivity(settings.getSettingsIntent(this));
         }
 
