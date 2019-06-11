@@ -22,11 +22,11 @@ namespace OscilloscopeAndroid
         private PlotView view;
         private float x_scale = 1;
         private float y_scale = 1;
-        private int dataSize;
+        private Settings settings;
 
-        public OsclilloscopePlot(int datasize)
+        public OsclilloscopePlot(ref Settings settings)
         {
-            this.dataSize = datasize;
+            this.settings = settings;
         }
 
         public PlotView View
@@ -46,7 +46,7 @@ namespace OscilloscopeAndroid
             view.Model.Axes.Add(new LinearAxis
             {
                 Position = AxisPosition.Bottom,
-                //Maximum = (dataSize - 1) * x_scale,
+                Maximum = (settings.DataSize - 1) * x_scale,
                 //Minimum = 0,
                 TickStyle = TickStyle.Crossing,
                 MajorGridlineStyle = LineStyle.Dash,
@@ -61,8 +61,8 @@ namespace OscilloscopeAndroid
             {
                 //IsZoomEnabled = false,    //можно ли зумить оси, должно стоять у двух
                 Position = AxisPosition.Left,
-                //Maximum = 12 * y_scale,
-                //Minimum = -2 * y_scale,
+                Maximum = 12 * y_scale,
+                Minimum = -2 * y_scale,
                 MajorGridlineStyle = LineStyle.Solid,
                 MajorGridlineColor = OxyColor.Parse("#4A4A4A"),
                 MinorGridlineStyle = LineStyle.Solid,
@@ -73,6 +73,7 @@ namespace OscilloscopeAndroid
 
         public void UpdatePlotModel()
         {
+
             view.Model.InvalidatePlot(true);
         }
 
@@ -140,16 +141,16 @@ namespace OscilloscopeAndroid
 
             //Симуляция данных на графике
             Random random = new Random();
-            AddData(series1, GenerateData(random));
-            if (settings.ActiveChannels.Length == 2)
+            if (settings.ActiveChannels[0])
+            {
+                AddData(series1, GenerateData(random));
+                view.Model.Series.Add(series1);
+            }
+            if (settings.ActiveChannels[1])
+            {
                 AddData(series2, GenerateData(random));
-
-            //Реальные данные
-            //AddData(series1, data[0]);
-            //AddData(series2, data[1]);
-
-            view.Model.Series.Add(series1);
-            view.Model.Series.Add(series2);
+                view.Model.Series.Add(series2);
+            }
         }
 
         public void AddData(LineSeries series, float[] data)
@@ -157,6 +158,7 @@ namespace OscilloscopeAndroid
             DataPoint point;
             for (int i = 0; i < data.Length; i++)
             {
+                //point = new DataPoint(i * settings.SamplingPeriod, data[i]);
                 point = new DataPoint(i, data[i]);
                 series.Points.Add(point);
             }
@@ -164,8 +166,8 @@ namespace OscilloscopeAndroid
 
         public float[] GenerateData(Random random)
         {
-            float[] data = new float[dataSize];
-            for (int i = 0; i < dataSize; i++)
+            float[] data = new float[settings.DataSize];
+            for (int i = 0; i < settings.DataSize; i++)
             {
                 data[i] = random.Next(0, 12);
             }
@@ -178,6 +180,15 @@ namespace OscilloscopeAndroid
             {
                 x_scale += 0.1f;
             }
+
+            foreach (OxyPlot.Axes.Axis axis in view.Model.Axes)
+            {
+                if (axis.Position.Equals(AxisPosition.Bottom))
+                {
+                    axis.Maximum = (settings.DataSize - 1) * x_scale;
+                }
+            }
+            UpdatePlotModel();
         }
 
         public void AxisX_decrease(object sender, EventArgs e)
@@ -186,21 +197,42 @@ namespace OscilloscopeAndroid
             {
                 x_scale -= 0.1f;
             }
+
+            foreach (OxyPlot.Axes.Axis axis in view.Model.Axes)
+            {
+                if (axis.Position.Equals(AxisPosition.Bottom))
+                {
+                    axis.Maximum = (settings.DataSize - 1) * x_scale;
+                }
+            }
+            UpdatePlotModel();
         }
 
         public void AxisY_increment(object sender, EventArgs e)
         {
-            if (x_scale <= 1f)
+            //if (y_scale >= 0.5f && y_scale <= 2f)
+            foreach (OxyPlot.Axes.Axis axis in view.Model.Axes)
             {
-                y_scale += 0.1f;
+                if (axis.Position.Equals(AxisPosition.Left))
+                {
+                    axis.Maximum = axis.Maximum + axis.Maximum * 0.05f;
+                    axis.Minimum = axis.Minimum - axis.Minimum * 0.05f;
+                    UpdatePlotModel();
+                }
             }
+
         }
 
         public void AxisY_decrease(object sender, EventArgs e)
         {
-            if (y_scale >= 0.2f)
+            foreach (OxyPlot.Axes.Axis axis in view.Model.Axes)
             {
-                y_scale -= 0.1f;
+                if (axis.Position.Equals(AxisPosition.Left))
+                {
+                    axis.Maximum = axis.Maximum - axis.Maximum * 0.05f;
+                    axis.Minimum = axis.Minimum + axis.Minimum * 0.05f;
+                    UpdatePlotModel();
+                }
             }
         }
     }

@@ -7,9 +7,10 @@
     android:background="#ff212121">
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height=    "65sp">
+        android:layout_height=    "50sp"
+        android:layout_marginTop="8.0dp">
 
-       <LinearLayout
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_weight="2"
@@ -27,6 +28,7 @@
                 android:enabled="true"
                 android:layout_weight="2"/>
             <TextView
+                style="@style/TextWhiteColor"
                 android:text="T"
                 android:textSize="25sp"
                 android:textAppearance="?android:attr/textAppearanceLarge"
@@ -46,7 +48,7 @@
                 android:layout_weight="2"/>
         </LinearLayout>
 
-       <LinearLayout
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_weight="2"
@@ -63,6 +65,7 @@
                 android:enabled="true"
                 android:layout_weight="2"/>
             <TextView
+                style="@style/TextWhiteColor"
                 android:text="U"
                 android:textSize="25sp"
                 android:textAppearance="?android:attr/textAppearanceLarge"
@@ -96,7 +99,7 @@
                 android:gravity="center_horizontal"
                 android:id="@+id/button2"
                 android:enabled="true"
-                android:layout_weight="2"
+                android:layout_weight="1"
                 android:layout_marginLeft="48.0dp"
                 android:layout_marginRight="39.0dp" />
 

@@ -30,16 +30,17 @@ namespace OscilloscopeAndroid
             oscilloscope = new Oscilloscope(transport, ApplicationContext);
             settings = new Settings();
             oscilloscope.Settings = settings;
-            osclilloscopePlot = new OsclilloscopePlot(settings.DataSize);
-            
-            try
-            {
-                settings.SetSettings(Intent, ApplicationContext);
-            }
-            catch
+            osclilloscopePlot = new OsclilloscopePlot(ref settings);
+
+            if (!Intent.GetBooleanExtra("changed", false))
             {
                 settings.ResetSettings();
             }
+            else
+            {
+                settings.SetSettings(Intent, ApplicationContext);
+            }
+
 
             SetContentView(Resource.Layout.activity_main);
 
@@ -60,8 +61,8 @@ namespace OscilloscopeAndroid
             buttonAxisX_inc.Click += osclilloscopePlot.AxisX_increment;
             buttonAxisX_dec.Click += osclilloscopePlot.AxisX_decrease;
 
-            Button buttonAxisY_inc = FindViewById<Button>(Resource.Id.button_y_dec);
-            Button buttonAxisY_dec = FindViewById<Button>(Resource.Id.button_y_inc);
+            Button buttonAxisY_inc = FindViewById<Button>(Resource.Id.button_y_inc);
+            Button buttonAxisY_dec = FindViewById<Button>(Resource.Id.button_y_dec);
             buttonAxisY_inc.Click += osclilloscopePlot.AxisY_increment;
             buttonAxisY_dec.Click += osclilloscopePlot.AxisY_decrease;
 
@@ -92,7 +93,7 @@ namespace OscilloscopeAndroid
         private void ButtinSettings_Click(object sender, System.EventArgs e)
         {
             enabled = false;
-            StartActivity(settings.getSettingsIntent(this));
+            StartActivity(settings.PutSettingsInIntent(this));
         }
 
     }

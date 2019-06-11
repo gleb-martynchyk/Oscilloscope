@@ -20,7 +20,7 @@ namespace OscilloscopeAndroid
         private bool[] channelARange;
         private bool[] channelBRange;
         private double samplingPeriod;
-        private int dataSize = 700;
+        private int dataSize = 300;
         private ushort[] uInt16Buffer;
         public enum ranges { _5V, _2V, _1V, _500mV, _200mV, _100mV, _50mV, _20mV, _10mV, _5mV };
 
@@ -82,8 +82,6 @@ namespace OscilloscopeAndroid
 
         public void SetSettings(Intent intent, Context context)
         {
-            if (!intent.GetBooleanExtra("Save", false))
-                throw new Exception();
             ip = intent.GetStringExtra("IP");
             if (ip == null || ip.Equals(""))
             {
@@ -96,9 +94,12 @@ namespace OscilloscopeAndroid
                 Toast.MakeText(context, "Включите хотя-бы 1 канал", ToastLength.Long).Show();
                 throw new Exception();
             }
+            ip = intent.GetStringExtra("IP");
+            activeChannels = intent.GetBooleanArrayExtra("activeChannels");
             channelARange = intent.GetBooleanArrayExtra("channelBRange");
-            channelARange = intent.GetBooleanArrayExtra("channelARange");
-            samplingPeriod = intent.GetDoubleExtra("samplingPeriod", 1e-6);
+            channelBRange = intent.GetBooleanArrayExtra("channelARange");
+            dataSize = intent.GetIntExtra("dataSize", 200);
+            samplingPeriod = intent.GetDoubleExtra("samplingPeriod", 1e-3);
         }
 
         public void ResetSettings()
@@ -110,13 +111,14 @@ namespace OscilloscopeAndroid
             samplingPeriod = 1e-3;
         }
 
-        public Intent getSettingsIntent(Context context)
+        public Intent PutSettingsInIntent(Context context)
         {
             var intent = new Intent(context, typeof(SettingsView));
             intent.PutExtra("IP", ip);
             intent.PutExtra("activeChannels", activeChannels);
             intent.PutExtra("channelARange", channelARange);
             intent.PutExtra("channelBRange", channelBRange);
+            intent.PutExtra("dataSize", dataSize);
             intent.PutExtra("samplingPeriod", samplingPeriod);
             return intent;
         }
